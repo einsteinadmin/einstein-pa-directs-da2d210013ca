@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>People Analyzer — My Directs</title>
+<style>
+:root{
+  --orange-50:#FEF6EC; --orange-100:#FDE3C2; --orange-200:#FABD84; --orange-500:#EF8B22; --orange-700:#D96B10; --orange-900:#CC5500;
+  --navy-50:#EEF1F4; --navy-100:#CDD5DA; --navy-200:#9AADB7; --navy-400:#507080; --navy-500:#27343D; --navy-700:#1A2329; --navy-900:#0B1014;
+  --blue-50:#EBF4FB; --blue-100:#C3DFEF; --blue-500:#0979C3; --blue-700:#065E9A; --blue-900:#023B63;
+  --grey-50:#F4F5F5; --grey-100:#E2E3E4; --grey-200:#C0C2C4; --grey-400:#787C7F; --grey-500:#53575A; --grey-700:#363839; --grey-900:#191A1B;
+  --success:#69995D; --error:#CC0100;
+  --text-faint:#5F6468;
+  --radius-sm:6px; --radius-md:12px; --radius-lg:20px; --radius-pill:999px;
+  --shadow-sm:0 1px 2px rgba(39,52,61,.08); --shadow-md:0 4px 12px rgba(39,52,61,.10); --shadow-lg:0 12px 32px rgba(39,52,61,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:16px}
+body{font-family:'Roboto',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:var(--grey-700);background:var(--grey-50);font-size:14px;line-height:1.5;min-width:1000px}
+h1,h2,h3,h4{color:var(--navy-500);font-weight:700}
+a{color:var(--blue-500)}
+button{font:inherit;cursor:pointer}
+::selection{background:var(--blue-100)}
+
+/* ---- Privacy banner ---- */
+#privacyBar{background:var(--blue-900);color:#fff;text-align:center;font-size:11.5px;padding:6px 12px;letter-spacing:.01em}
+#privacyBar b{color:var(--orange-200)}
+
+/* ---- App shell ---- */
+#appHeader{background:var(--navy-500);color:#fff;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow-md)}
+#appHeader .brand{display:flex;align-items:baseline;gap:10px}
+#appHeader .brand .bebas{font-family:'Bebas Neue','Roboto',sans-serif;font-size:26px;letter-spacing:.03em;color:#fff}
+#appHeader .brand .tag{font-size:12px;color:var(--navy-100)}
+#appHeader .right{display:flex;align-items:center;gap:18px}
+#appHeader .savebox{font-size:11px;color:var(--navy-100);text-align:right}
+#appHeader .savebox b{color:#fff}
+#appHeader .switchlink{background:none;border:1px solid var(--navy-200);color:#fff;border-radius:var(--radius-pill);padding:6px 14px;font-size:11.5px;font-weight:700}
+#appHeader .switchlink:hover{background:var(--navy-700)}
+
+nav#mainNav{display:flex;gap:4px;background:#fff;border-bottom:1px solid var(--grey-100);padding:0 28px;position:sticky;top:70px;z-index:49}
+nav#mainNav button{background:none;border:none;border-bottom:3px solid transparent;padding:14px 18px;font-size:13.5px;font-weight:700;color:var(--grey-500);letter-spacing:.01em}
+nav#mainNav button.active{color:var(--navy-500);border-bottom-color:var(--orange-500)}
+nav#mainNav button:hover{color:var(--navy-500)}
+main{max-width:1200px;margin:0 auto;padding:28px 28px 90px}
+.view{display:none}
+.view.active{display:block}
+
+/* ---- Picker screen ---- */
+#pickerScreen{max-width:900px;margin:60px auto;padding:0 28px 90px}
+#pickerScreen .ptitle{font-family:'Bebas Neue','Roboto',sans-serif;font-size:34px;letter-spacing:.02em;color:var(--navy-500);margin-bottom:6px}
+#pickerScreen .psub{color:var(--grey-400);font-size:13px;margin-bottom:22px}
+.picker-privacy{background:var(--blue-50);border:1px solid var(--blue-100);border-radius:var(--radius-md);padding:14px 18px;font-size:12.5px;color:var(--blue-900);margin-bottom:26px;line-height:1.5}
+.picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.picker-card{background:#fff;border:1px solid var(--grey-100);border-radius:var(--radius-md);padding:20px;box-shadow:var(--shadow-sm);text-align:left;cursor:pointer}
+.picker-card:hover{border-color:var(--blue-500);box-shadow:var(--shadow-md)}
+.picker-card h3{font-size:15px;margin-bottom:4px}
+.picker-card .prole{font-size:11.5px;color:var(--grey-400);margin-bottom:8px}
+.picker-card .pcount{font-size:11px;color:var(--blue-700);font-weight:700}
+
+/* ---- helpers ---- */
+.help-btn{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--navy-100);color:var(--navy-500);font-size:11px;font-weight:700;border:none;cursor:pointer;vertical-align:middle}
+.help-btn:hover{background:var(--navy-200)}
+.popover{position:absolute;background:#fff;border:1px solid var(--grey-200);border-radius:var(--radius-md);box-shadow:var(--shadow-lg);padding:18px 20px;font-size:12.5px;color:var(--grey-700);z-index:200;width:380px;line-height:1.6}
+.popover h4{font-size:13px;margin-bottom:8px}
+.popover dl{margin:0}
+.popover dt{font-weight:700;color:var(--navy-500);margin-top:8px}
+.popover dt:first-child{margin-top:0}
+.popover dd{color:var(--grey-500)}
+.popover .close-x{position:absolute;top:8px;right:10px;background:none;border:none;font-size:14px;color:var(--grey-400);cursor:pointer}
+
+.muted{color:var(--text-faint)}
+.small{font-size:12px}
+.tiny{font-size:11px}
+.badge{display:inline-block;padding:2px 9px;border-radius:var(--radius-pill);font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.badge.a{background:#E3EEDF;color:#3E6636}
+.badge.b{background:#FFF6D6;color:#7A5D00}
+.badge.c{background:#F8DCDC;color:#8E0000}
+.badge.wrongseat{background:var(--orange-100);color:var(--orange-900)}
+.badge.belowbar{background:#F8DCDC;color:#8E0000}
+.badge.pending{background:var(--grey-100);color:var(--grey-500)}
+
+/* ---- Roster ---- */
+.summary-strip{display:flex;gap:28px;align-items:center;background:#fff;border:1px solid var(--grey-100);border-radius:var(--radius-md);padding:16px 24px;margin-bottom:24px;flex-wrap:wrap}
+.summary-strip .stat{text-align:center}
+.summary-strip .stat b{display:block;font-size:22px;color:var(--navy-500)}
+.summary-strip .stat span{font-size:11px;color:var(--grey-400);text-transform:uppercase;letter-spacing:.04em}
+.summary-strip .addbtn{margin-left:auto;background:var(--navy-500);color:#fff;border:none;border-radius:var(--radius-sm);padding:10px 18px;font-size:12.5px;font-weight:700}
+.summary-strip .addbtn:hover{background:var(--navy-700)}
+
+.roster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:20px}
+.p-card{background:#fff;border:1px solid var(--grey-100);border-radius:var(--radius-md);padding:20px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:10px}
+.p-card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.p-card h3{font-size:16px;margin:0}
+.p-card .pos{font-size:11.5px;color:var(--grey-400)}
+.p-card .grade-block{text-align:right}
+.p-card .grade-letter{font-size:26px;font-weight:700;color:var(--navy-500);line-height:1}
+.p-card .composite{font-size:11px;color:var(--grey-400)}
+.p-card .badges{display:flex;gap:6px;flex-wrap:wrap}
+.p-card .prog{font-size:11px;color:var(--grey-400)}
+.p-card .go{margin-top:4px;background:var(--navy-500);color:#fff;border:none;border-radius:var(--radius-sm);padding:9px;font-size:12.5px;font-weight:700}
+.p-card .go:hover{background:var(--navy-700)}
+.p-card .rmbtn{background:none;border:none;color:var(--grey-400);font-size:11px;text-align:left;padding:0}
+.p-card .rmbtn:hover{color:var(--error)}
+
+.addcard{border:1.5px dashed var(--grey-200);border-radius:var(--radius-md);padding:20px;display:flex;flex-direction:column;gap:10px;background:var(--grey-50)}
+.addcard input{border:1px solid var(--grey-200);border-radius:var(--radius-sm);padding:8px 10px;font:inherit;font-size:12.5px}
+.addcard button{background:var(--blue-500);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px;font-size:12px;font-weight:700}
+.addcard button:hover{background:var(--blue-700)}
+
+/* ---- Evaluate ---- */
+.person-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+.person-tabs button{background:#fff;border:1px solid var(--grey-200);border-radius:var(--radius-pill);padding:8px 16px;font-size:12.5px;color:var(--grey-700)}
+.person-tabs button.active{background:var(--navy-500);color:#fff;border-color:var(--navy-500)}
+.person-tabs button.done{border-color:var(--success)}
+
+.eval-head{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--grey-100);border-radius:var(--radius-md);padding:18px 24px;margin-bottom:20px}
+.eval-head h2{font-size:20px;margin:0}
+.eval-head .pos{font-size:12px;color:var(--grey-400)}
+.eval-head .progress-wrap{display:flex;align-items:center;gap:10px}
+.progress-track{width:160px;height:8px;background:var(--grey-100);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:var(--orange-500)}
+.eval-head .live-grade{text-align:right}
+.eval-head .live-grade .letter{font-size:24px;font-weight:700;color:var(--navy-500)}
+.eval-head .savestamp{font-size:10.5px;color:var(--grey-400);margin-top:2px}
+
+.section{background:#fff;border:1px solid var(--grey-100);border-radius:var(--radius-md);padding:24px;margin-bottom:16px}
+.section > .shead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.section h3{font-size:15px;display:flex;align-items:center;gap:8px}
+.section .shelp{font-size:12px;color:var(--grey-400);margin-bottom:14px;line-height:1.5}
+
+.row{border-top:1px solid var(--grey-50);padding:14px 0}
+.row:first-child{border-top:none;padding-top:0}
+.row .rowhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+.row .rtitle{font-size:13px;font-weight:700;color:var(--navy-500)}
+.row .rhelp{font-size:11.5px;color:var(--grey-400);margin-top:2px;max-width:560px}
+.chiprow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.chip{border:1.5px solid var(--grey-200);background:#fff;border-radius:var(--radius-sm);padding:6px 13px;font-size:12.5px;font-weight:700;color:var(--grey-500);min-width:38px;text-align:center}
+.chip:hover{border-color:var(--navy-400)}
+.chip.sel{background:var(--navy-500);border-color:var(--navy-500);color:#fff}
+.chip.sel.good{background:var(--success);border-color:var(--success)}
+.chip.sel.mid{background:var(--orange-700);border-color:var(--orange-700)}
+.chip.sel.bad{background:var(--error);border-color:var(--error)}
+.belowbar-dot{width:7px;height:7px;border-radius:50%;background:var(--error);display:inline-block;margin-left:6px;vertical-align:middle}
+
+.togglepair{display:flex;gap:6px}
+.togglepair button{border:1.5px solid var(--grey-200);background:#fff;border-radius:var(--radius-sm);padding:6px 14px;font-size:12px;font-weight:700;color:var(--grey-500)}
+.togglepair button.yes.sel{background:var(--success);border-color:var(--success);color:#fff}
+.togglepair button.no.sel{background:var(--error);border-color:var(--error);color:#fff}
+
+textarea.narrative{width:100%;min-height:90px;border:1px solid var(--grey-200);border-radius:var(--radius-sm);padding:12px;font:inherit;font-size:13px;resize:vertical}
+textarea.narrative.note-required{border-color:var(--orange-500);background:var(--orange-50)}
+.reqflag{font-size:10.5px;color:var(--orange-900);font-weight:700;margin-top:6px}
+
+.itp-trait{border-top:1px solid var(--grey-50);padding:14px 0}
+.itp-trait:first-child{border-top:none;padding-top:0}
+.itp-trait .tname{font-size:13px;font-weight:700;color:var(--navy-500)}
+.itp-trait .tdef{font-size:11.5px;color:var(--grey-400);margin-bottom:8px}
+.itp-trait input.tnote{width:100%;margin-top:8px;border:1px solid var(--grey-200);border-radius:var(--radius-sm);padding:7px 10px;font:inherit;font-size:12.5px}
+
+.gwc-grid{display:flex;gap:24px;flex-wrap:wrap}
+.gwc-item{flex:1;min-width:160px}
+.gwc-item .gtitle{font-size:12.5px;font-weight:700;color:var(--navy-500);margin-bottom:6px}
+
+.person-nav{display:flex;justify-content:space-between;margin-top:20px}
+.person-nav button{background:#fff;border:1px solid var(--grey-200);border-radius:var(--radius-sm);padding:12px 22px;font-size:13px;font-weight:700;color:var(--navy-500)}
+.person-nav button:hover{border-color:var(--navy-400)}
+.person-nav button:disabled{opacity:.4;cursor:default}
+
+/* ---- Export ---- */
+.export-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.export-card{background:#fff;border:1px solid var(--grey-100);border-radius:var(--radius-md);padding:24px}
+.export-card h3{font-size:14px;margin-bottom:8px}
+.export-card p{font-size:12px;color:var(--grey-400);margin-bottom:14px;line-height:1.5}
+.export-card button, .export-card label.filebtn{display:inline-block;background:var(--navy-500);color:#fff;border:none;border-radius:var(--radius-sm);padding:11px 20px;font-size:12.5px;font-weight:700;cursor:pointer}
+.export-card button:hover, .export-card label.filebtn:hover{background:var(--navy-700)}
+.export-card input[type=file]{display:none}
+.export-card .checklist{font-size:11.5px;color:var(--orange-900);background:var(--orange-50);border:1px solid var(--orange-200);border-radius:var(--radius-sm);padding:10px 12px;margin-top:12px}
+
+footer{background:var(--navy-700);color:var(--navy-100);text-align:center;padding:16px;font-size:11px}
+.toast{position:fixed;bottom:20px;right:24px;background:var(--navy-500);color:#fff;padding:10px 18px;border-radius:var(--radius-sm);font-size:12.5px;box-shadow:var(--shadow-lg);opacity:0;transform:translateY(6px);transition:.25s;z-index:300;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<div id="privacyBar">Private until you export. Your evaluations stay <b>in this browser</b> — nothing is sent anywhere until you download a file.</div>
+
+<!-- PICKER -->
+<div id="pickerScreen">
+  <div class="ptitle">WHO ARE YOU?</div>
+  <div class="psub">People Analyzer — Directs tier · Q3 2026. Pick your name to load (or start) your roster.</div>
+  <div class="picker-privacy">This is a lighter version of the Roundtable tool, for evaluating your own direct reports. Everything you enter lives in this browser's local storage. Nothing leaves until you go to <b>Export</b> and download a file to send to Cameron.</div>
+  <div class="picker-grid" id="pickerGrid"></div>
+</div>
+
+<!-- APP -->
+<header id="appHeader" style="display:none">
+  <div class="brand">
+    <span class="bebas">PEOPLE ANALYZER</span>
+    <span class="tag" id="headerTag">My Directs · Q3 2026</span>
+  </div>
+  <div class="right">
+    <div class="savebox" id="saveIndicator">Not saved yet</div>
+    <button class="switchlink" id="btnSwitch">Switch evaluator</button>
+  </div>
+</header>
+
+<nav id="mainNav" style="display:none">
+  <button data-view="roster" class="active">My roster</button>
+  <button data-view="evaluate">Evaluate</button>
+  <button data-view="export">Export</button>
+</nav>
+
+<main id="mainArea" style="display:none">
+
+  <!-- ROSTER -->
+  <section id="view-roster" class="view active">
+    <div class="summary-strip" id="summaryStrip"></div>
+    <div class="roster-grid" id="rosterGrid"></div>
+  </section>
+
+  <!-- EVALUATE -->
+  <section id="view-evaluate" class="view">
+    <div class="person-tabs" id="personTabs"></div>
+    <div class="eval-head" id="evalHead"></div>
+    <div id="evalSections"></div>
+    <div class="person-nav">
+      <button id="prevPerson">← Previous person</button>
+      <button id="nextPerson">Next person →</button>
+    </div>
+  </section>
+
+  <!-- EXPORT -->
+  <section id="view-export" class="view">
+    <div class="export-grid">
+      <div class="export-card">
+        <h3>Export for Cameron</h3>
+        <p>Downloads a JSON file with everyone on your roster — scores, notes, GWC, rehire calls. This is the only way your evaluations leave this browser. Send the file to Cameron (Slack DM or email).</p>
+        <button id="btnExport">Download export file</button>
+        <div class="checklist" id="exportChecklist" style="display:none"></div>
+      </div>
+      <div class="export-card">
+        <h3>Import JSON</h3>
+        <p>Restore a prior backup of your own export, or merge one back in if you switched browsers. Only merges into your own roster.</p>
+        <label class="filebtn" for="importFile">Choose file…</label>
+        <input type="file" id="importFile" accept="application/json">
+        <div class="tiny muted" id="importStatus" style="margin-top:10px"></div>
+      </div>
+      <div class="export-card">
+        <h3>Autosave</h3>
+        <p>Every input in the Evaluate view saves to this browser's local storage immediately.</p>
+        <div class="small" id="lastSavedFull">Not saved yet.</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Einstein Moving Company — internal. Your entries stay in this browser (localStorage) until you export. Nothing is sent anywhere.</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ SEED ROSTERS ============ */
+const ROSTERS = {
+  brian: { name:"Brian Herzig", role:"CTXH Regional Manager", people:[
+    {name:"Calvin Hughes", role:"BM, North Austin", branch:"North Austin", extra:"transitioning out"},
+    {name:"Daniel Behseresht", role:"BM (incoming), North Austin", branch:"North Austin"},
+    {name:"Chris Anderson", role:"BM, South Austin", branch:"South Austin"},
+    {name:"Frank Williams", role:"BM, Leander", branch:"Leander"},
+    {name:"Dustin Street", role:"BM, San Antonio", branch:"San Antonio"},
+    {name:"Sergio Buenrostro", role:"BM, Houston", branch:"Houston"}
+  ]},
+  mike: { name:"Mike Vandenbroader", role:"DFWT Regional Manager + Head of Ops", people:[
+    {name:"Chris Beattie", role:"BM, Dallas", branch:"Dallas"},
+    {name:"Grant Hardison", role:"BM, Fort Worth", branch:"Fort Worth"},
+    {name:"Khevan Dueck", role:"BM, McKinney", branch:"McKinney"},
+    {name:"Jack Davis", role:"BM, Garland", branch:"Garland"},
+    {name:"Steven Anderson", role:"BM, Tampa", branch:"Tampa"}
+  ]},
+  amanda: { name:"Amanda Ware", role:"Director of CX", people:[
+    {name:"Nhel Banayad", role:"Sales Team Lead", branch:null},
+    {name:"Carly", role:"Claims Manager", branch:null}
+  ]},
+  matisen: { name:"Matisen Harper", role:"Director of IT", people:[
+    {name:"Fabian", role:"Senior Developer", branch:null}
+  ]},
+  anne: { name:"Anne Bosse", role:"Director of Employee Experience", people:[
+    {name:"Jalissa", role:"HR Generalist", branch:null}
+  ]},
+  nhel: { name:"Nhel Banayad", role:"Sales Team Lead (runs via Amanda's org)", people:[
+    {name:"Tet", role:"Sales Enablement Manager", branch:null}
+  ]},
+  paul: { name:"Paul Morin", role:"CFO/COO", people:[], helper:"Add anyone you directly manage. (Vendor/controller evals live in the leadership-tier tool.)" }
+};
+
+const CV_ITEMS = [
+  "Communicate clearly and with kindness",
+  "Hustle but don't rush",
+  "Ownership over results",
+  "Improve with Enthusiasm",
+  "Conscientious attention to detail",
+  "Elevate attitudes",
+  "Support Generously"
+];
+const CV_ANCHORS = [
+  ["1","Active problem"],["2","Below the bar"],["3","Meets the bar"],
+  ["4","Strong, with named opportunities"],["5","The standard others get pointed to"]
+];
+const ITP_TRAITS = [
+  {key:"humble", label:"Humble", def:"Lacks excessive ego, shares credit."},
+  {key:"hungry", label:"Hungry", def:"Self-motivated, always looking for more."},
+  {key:"smart", label:"Smart", def:"People-smart, interpersonally aware."}
+];
+
+/* ============ STATE ============ */
+let evaluatorKey = null;
+let DATA = null; // {evaluatorKey, evaluatorName, evaluatorRole, people:[...]}
+let personIdx = 0;
+let saveTimer = null;
+
+function storageKey(key){ return "einstein-pa-directs-q3-" + key; }
+
+function freshPerson(seed){
+  return {
+    name: seed.name, role: seed.role || "", branch: seed.branch || null,
+    seeded: !!seed.seeded,
+    coreValues: { items: new Array(CV_ITEMS.length).fill(null), note: "" },
+    itp: {
+      humble: {v:null, note:""},
+      hungry: {v:null, note:""},
+      smart: {v:null, note:""}
+    },
+    gwc: { get:null, want:null, capacity:null },
+    rehire: null,
+    overallNote: "",
+    actionPlan: null
+  };
+}
+
+function loadEvaluator(key){
+  evaluatorKey = key;
+  const raw = localStorage.getItem(storageKey(key));
+  if (raw){
+    try{ DATA = JSON.parse(raw); }catch(e){ DATA = null; }
+  }
+  if (!DATA){
+    const seed = ROSTERS[key];
+    DATA = {
+      evaluatorKey: key,
+      evaluatorName: seed.name,
+      evaluatorRole: seed.role,
+      people: seed.people.map(p => freshPerson(Object.assign({seeded:true}, p)))
+    };
+    save();
+  }
+  personIdx = 0;
+  showApp();
+}
+
+function save(){
+  if (!evaluatorKey || !DATA) return;
+  localStorage.setItem(storageKey(evaluatorKey), JSON.stringify(DATA));
+  const stamp = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  const el1 = document.getElementById('saveIndicator');
+  const el2 = document.getElementById('lastSavedFull');
+  if (el1) el1.innerHTML = 'Saved <b>' + stamp + '</b>';
+  if (el2) el2.textContent = 'Last saved ' + stamp + '.';
+}
+
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 250);
+}
+
+/* ============ COMPUTE ============ */
+function computeStats(p){
+  const scored = [];
+  p.coreValues.items.forEach(v => { if (v!=null) scored.push(v); });
+  ITP_TRAITS.forEach(t => { const v = p.itp[t.key].v; if (v!=null) scored.push(v); });
+  const composite = scored.length ? (scored.reduce((a,b)=>a+b,0)/scored.length) : null;
+  let grade = null;
+  if (composite != null){
+    grade = composite >= 4.5 ? 'A' : (composite >= 4.0 ? 'B' : 'C');
+  }
+  const gwcVals = [p.gwc.get, p.gwc.want, p.gwc.capacity];
+  const wrongSeat = gwcVals.some(v => v === false);
+  const belowBar = p.coreValues.items.some(v => v!=null && v<=2);
+  const cvComplete = p.coreValues.items.every(v => v!=null);
+  const itpComplete = ITP_TRAITS.every(t => p.itp[t.key].v != null);
+  const gwcSet = gwcVals.every(v => v !== null && v !== undefined);
+  const complete = cvComplete && itpComplete && gwcSet;
+  const noteRequired = (composite!=null && composite < 4.0) || wrongSeat || belowBar;
+  return {composite, grade, wrongSeat, belowBar, complete, noteRequired};
+}
+
+/* ============ RENDER: PICKER ============ */
+function renderPicker(){
+  const grid = document.getElementById('pickerGrid');
+  grid.innerHTML = '';
+  Object.keys(ROSTERS).forEach(key => {
+    const r = ROSTERS[key];
+    const card = document.createElement('div');
+    card.className = 'picker-card';
+    card.innerHTML = '<h3>'+esc(r.name)+'</h3><div class="prole">'+esc(r.role)+'</div>'+
+      '<div class="pcount">'+r.people.length+' direct'+(r.people.length===1?'':'s')+(r.people.length===0?' · start empty':'')+'</div>';
+    card.addEventListener('click', ()=> loadEvaluator(key));
+    grid.appendChild(card);
+  });
+}
+
+function showApp(){
+  document.getElementById('pickerScreen').style.display = 'none';
+  document.getElementById('appHeader').style.display = 'flex';
+  document.getElementById('mainNav').style.display = 'flex';
+  document.getElementById('mainArea').style.display = 'block';
+  document.getElementById('headerTag').textContent = DATA.evaluatorName + ' · ' + DATA.evaluatorRole + ' · Q3 2026';
+  save();
+  switchView('roster');
+}
+
+function backToPicker(){
+  evaluatorKey = null; DATA = null;
+  document.getElementById('pickerScreen').style.display = 'block';
+  document.getElementById('appHeader').style.display = 'none';
+  document.getElementById('mainNav').style.display = 'none';
+  document.getElementById('mainArea').style.display = 'none';
+  renderPicker();
+}
+
+/* ============ VIEW SWITCH ============ */
+function switchView(v){
+  document.querySelectorAll('#mainNav button').forEach(b => b.classList.toggle('active', b.dataset.view===v));
+  document.querySelectorAll('.view').forEach(s => s.classList.toggle('active', s.id === 'view-'+v));
+  if (v==='roster') renderRoster();
+  if (v==='evaluate') renderEvaluate();
+  if (v==='export') renderExport();
+}
+
+/* ============ RENDER: ROSTER ============ */
+function renderRoster(){
+  const strip = document.getElementById('summaryStrip');
+  let a=0,b=0,c=0,complete=0;
+  DATA.people.forEach(p => {
+    const s = computeStats(p);
+    if (s.grade==='A') a++; else if (s.grade==='B') b++; else if (s.grade==='C') c++;
+    if (s.complete) complete++;
+  });
+  strip.innerHTML =
+    stat(a,'A players') + stat(b,'B players') + stat(c,'C players') +
+    stat(complete+' / '+DATA.people.length, 'Complete') +
+    '<button class="addbtn" id="btnAddPerson">+ Add a person</button>';
+  document.getElementById('btnAddPerson').addEventListener('click', addPersonPrompt);
+
+  const grid = document.getElementById('rosterGrid');
+  grid.innerHTML = '';
+  DATA.people.forEach((p, i) => {
+    const s = computeStats(p);
+    const card = document.createElement('div');
+    card.className = 'p-card';
+    let badges = '';
+    if (s.grade) badges += '<span class="badge '+s.grade.toLowerCase()+'">'+s.grade+'</span>';
+    if (s.wrongSeat) badges += '<span class="badge wrongseat">Wrong seat</span>';
+    if (s.belowBar) badges += '<span class="badge belowbar">Below bar</span>';
+    if (!s.grade) badges += '<span class="badge pending">Not started</span>';
+    card.innerHTML =
+      '<div class="top">'+
+        '<div><h3>'+esc(p.name)+'</h3><div class="pos">'+esc(p.role||'')+'</div></div>'+
+        '<div class="grade-block"><div class="grade-letter">'+(s.grade||'—')+'</div>'+
+        (s.composite!=null?'<div class="composite">'+s.composite.toFixed(2)+'</div>':'')+'</div>'+
+      '</div>'+
+      '<div class="badges">'+badges+'</div>'+
+      '<div class="prog">'+(s.complete?'Complete':'In progress')+'</div>'+
+      '<button class="go" data-idx="'+i+'">Evaluate →</button>'+
+      '<button class="rmbtn" data-rm="'+i+'">Remove from roster</button>';
+    grid.appendChild(card);
+  });
+  grid.querySelectorAll('.go').forEach(btn => btn.addEventListener('click', e=>{
+    personIdx = parseInt(e.target.dataset.idx,10);
+    switchView('evaluate');
+  }));
+  grid.querySelectorAll('.rmbtn').forEach(btn => btn.addEventListener('click', e=>{
+    const idx = parseInt(e.target.dataset.rm,10);
+    const p = DATA.people[idx];
+    if (confirm('Remove '+p.name+' from your roster? This deletes their evaluation.')){
+      DATA.people.splice(idx,1);
+      save(); renderRoster();
+    }
+  }));
+
+  // add-person inline card
+  const addcard = document.createElement('div');
+  addcard.className = 'addcard';
+  addcard.innerHTML = '<div class="small" style="font-weight:700;color:var(--navy-500)">Add a person</div>'+
+    (ROSTERS[evaluatorKey].helper ? '<div class="tiny muted">'+esc(ROSTERS[evaluatorKey].helper)+'</div>' : '')+
+    '<input type="text" id="newPersonName" placeholder="Name">'+
+    '<input type="text" id="newPersonRole" placeholder="Role / branch">'+
+    '<button id="btnAddInline">Add</button>';
+  grid.appendChild(addcard);
+  document.getElementById('btnAddInline').addEventListener('click', ()=>{
+    const name = document.getElementById('newPersonName').value.trim();
+    const role = document.getElementById('newPersonRole').value.trim();
+    if (!name) return;
+    DATA.people.push(freshPerson({name, role, branch:null, seeded:false}));
+    save(); renderRoster();
+  });
+}
+
+function stat(val,label){
+  return '<div class="stat"><b>'+val+'</b><span>'+label+'</span></div>';
+}
+
+function addPersonPrompt(){
+  const el = document.getElementById('newPersonName');
+  if (el) el.focus();
+}
+
+/* ============ RENDER: EVALUATE ============ */
+function renderEvaluate(){
+  if (DATA.people.length === 0){
+    document.getElementById('personTabs').innerHTML = '';
+    document.getElementById('evalHead').innerHTML = '<div class="muted">No one on your roster yet. Add someone from My roster.</div>';
+    document.getElementById('evalSections').innerHTML = '';
+    return;
+  }
+  if (personIdx >= DATA.people.length) personIdx = DATA.people.length-1;
+  const tabs = document.getElementById('personTabs');
+  tabs.innerHTML = '';
+  DATA.people.forEach((p,i)=>{
+    const s = computeStats(p);
+    const btn = document.createElement('button');
+    btn.textContent = p.name;
+    btn.className = (i===personIdx?'active ':'') + (s.complete?'done':'');
+    btn.addEventListener('click', ()=>{ personIdx=i; renderEvaluate(); });
+    tabs.appendChild(btn);
+  });
+
+  const p = DATA.people[personIdx];
+  const s = computeStats(p);
+  const head = document.getElementById('evalHead');
+  const scoredCount = p.coreValues.items.filter(v=>v!=null).length + ITP_TRAITS.filter(t=>p.itp[t.key].v!=null).length;
+  head.innerHTML =
+    '<div><h2>'+esc(p.name)+'</h2><div class="pos">'+esc(p.role||'')+(p.extra?' · '+esc(p.extra):'')+'</div></div>'+
+    '<div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:'+Math.round(scoredCount/10*100)+'%"></div></div>'+
+    '<span class="tiny muted">'+scoredCount+' / 10 scored</span></div>'+
+    '<div class="live-grade"><div class="letter">'+(s.grade||'—')+'</div>'+
+    (s.composite!=null?'<div class="tiny muted">'+s.composite.toFixed(2)+' composite</div>':'<div class="tiny muted">not scored</div>')+'</div>';
+
+  const wrap = document.getElementById('evalSections');
+  wrap.innerHTML = '';
+  wrap.appendChild(buildCoreValuesSection(p, s));
+  wrap.appendChild(buildItpSection(p));
+  wrap.appendChild(buildGwcSection(p, s));
+  wrap.appendChild(buildRehireSection(p));
+  wrap.appendChild(buildNoteSection(p, s));
+  if (s.grade === 'C') wrap.appendChild(buildActionPlanSection(p));
+
+  document.getElementById('prevPerson').disabled = personIdx===0;
+  document.getElementById('nextPerson').disabled = personIdx===DATA.people.length-1;
+}
+
+function chip(val, selected, colorClass){
+  const cls = 'chip' + (selected?' sel '+colorClass:'');
+  return '<button type="button" class="'+cls+'" data-val="'+val+'">'+val+'</button>';
+}
+function chipColor(v){
+  if (v>=4) return 'good';
+  if (v===3) return 'mid';
+  return 'bad';
+}
+
+function buildCoreValuesSection(p, s){
+  const sec = document.createElement('div');
+  sec.className = 'section';
+  let anchorsHtml = '<dl>' + CV_ANCHORS.map(a=>'<dt>'+a[0]+'</dt><dd>'+a[1]+'</dd>').join('') + '</dl>';
+  sec.innerHTML =
+    '<div class="shead"><h3>CHOICES core values <button type="button" class="help-btn" data-pop="cv">?</button></h3></div>'+
+    '<div class="shelp">Score each value 1–5 for this quarter.</div>'+
+    '<div class="popover" data-popover="cv" style="display:none"><button class="close-x">✕</button><h4>Scale</h4>'+anchorsHtml+'</div>'+
+    CV_ITEMS.map((label, i) => {
+      const v = p.coreValues.items[i];
+      const dot = (v!=null && v<=2) ? '<span class="belowbar-dot" title="Below the bar"></span>' : '';
+      return '<div class="row"><div class="rowhead"><div><div class="rtitle">'+esc(label)+dot+'</div></div></div>'+
+        '<div class="chiprow" data-cv-idx="'+i+'">'+[1,2,3,4,5].map(n=>chip(n, v===n, chipColor(n))).join('')+'</div></div>';
+    }).join('') +
+    '<div class="row"><div class="rtitle">Note (optional, for this section)</div>'+
+    '<textarea class="narrative" data-cv-note>'+esc(p.coreValues.note)+'</textarea></div>';
+  wireChipRows(sec, sec.querySelectorAll('[data-cv-idx]'), (idx,val)=>{
+    p.coreValues.items[idx] = val; scheduleSave(); renderEvaluate();
+  });
+  sec.querySelector('[data-cv-note]').addEventListener('input', e=>{ p.coreValues.note = e.target.value; scheduleSave(); });
+  wirePopover(sec);
+  return sec;
+}
+
+function buildItpSection(p){
+  const sec = document.createElement('div');
+  sec.className = 'section';
+  sec.innerHTML = '<div class="shead"><h3>Ideal Team Player</h3></div>'+
+    '<div class="shelp">Humble, Hungry, Smart — 1–5 each, with an optional note.</div>'+
+    ITP_TRAITS.map(t => {
+      const rec = p.itp[t.key];
+      return '<div class="itp-trait"><div class="tname">'+t.label+'</div><div class="tdef">'+t.def+'</div>'+
+        '<div class="chiprow" data-itp="'+t.key+'">'+[1,2,3,4,5].map(n=>chip(n, rec.v===n, chipColor(n))).join('')+'</div>'+
+        '<input type="text" class="tnote" data-itp-note="'+t.key+'" placeholder="One-line note (optional)" value="'+escAttr(rec.note)+'">'+
+        '</div>';
+    }).join('');
+  ITP_TRAITS.forEach(t=>{
+    wireChipRows(sec, sec.querySelectorAll('[data-itp="'+t.key+'"]'), (_,val)=>{
+      p.itp[t.key].v = val; scheduleSave(); renderEvaluate();
+    });
+    sec.querySelector('[data-itp-note="'+t.key+'"]').addEventListener('input', e=>{ p.itp[t.key].note = e.target.value; scheduleSave(); });
+  });
+  return sec;
+}
+
+function buildGwcSection(p, s){
+  const sec = document.createElement('div');
+  sec.className = 'section';
+  const items = [['get','Get it'],['want','Want it'],['capacity','Capacity to do it']];
+  sec.innerHTML = '<div class="shead"><h3>GWC'+(s.wrongSeat?' <span class="badge wrongseat" style="margin-left:8px">Wrong seat</span>':'')+'</h3></div>'+
+    '<div class="shelp">Any No flags a wrong-seat asterisk on the roster card.</div>'+
+    '<div class="gwc-grid">'+items.map(([key,label])=>{
+      const v = p.gwc[key];
+      return '<div class="gwc-item"><div class="gtitle">'+label+'</div>'+
+        '<div class="togglepair" data-gwc="'+key+'">'+
+        '<button type="button" class="yes'+(v===true?' sel':'')+'" data-v="true">Yes</button>'+
+        '<button type="button" class="no'+(v===false?' sel':'')+'" data-v="false">No</button>'+
+        '</div></div>';
+    }).join('')+'</div>';
+  items.forEach(([key])=>{
+    const group = sec.querySelector('[data-gwc="'+key+'"]');
+    group.querySelectorAll('button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        p.gwc[key] = btn.dataset.v === 'true';
+        scheduleSave(); renderEvaluate();
+      });
+    });
+  });
+  return sec;
+}
+
+function buildRehireSection(p){
+  const sec = document.createElement('div');
+  sec.className = 'section';
+  sec.innerHTML = '<div class="shead"><h3>Enthusiastically rehire?</h3></div>'+
+    '<div class="togglepair" data-rehire>'+
+    '<button type="button" class="yes'+(p.rehire===true?' sel':'')+'" data-v="true">Yes</button>'+
+    '<button type="button" class="no'+(p.rehire===false?' sel':'')+'" data-v="false">No</button>'+
+    '</div>';
+  sec.querySelector('[data-rehire]').querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ p.rehire = btn.dataset.v==='true'; scheduleSave(); renderEvaluate(); });
+  });
+  return sec;
+}
+
+function buildNoteSection(p, s){
+  const sec = document.createElement('div');
+  sec.className = 'section';
+  sec.innerHTML = '<div class="shead"><h3>Overall note</h3></div>'+
+    '<div class="shelp">Required when composite is below 4.0, any GWC is No, or any core value is 2 or below.</div>'+
+    '<textarea class="narrative'+(s.noteRequired && !p.overallNote.trim()?' note-required':'')+'" data-overall-note placeholder="What stands out this quarter — context, examples, what to watch.">'+esc(p.overallNote)+'</textarea>'+
+    (s.noteRequired && !p.overallNote.trim() ? '<div class="reqflag">This note is required for this record — see the export confirm dialog.</div>' : '');
+  sec.querySelector('[data-overall-note]').addEventListener('input', e=>{
+    p.overallNote = e.target.value; scheduleSave();
+  });
+  return sec;
+}
+
+function buildActionPlanSection(p){
+  const sec = document.createElement('div');
+  sec.className = 'section';
+  sec.innerHTML = '<div class="shead"><h3>Action plan</h3></div>'+
+    '<div class="shelp">C players need a cleared path or an action plan — this is the plan.</div>'+
+    '<textarea class="narrative" data-action-plan placeholder="What changes, by when, how we\'ll know.">'+esc(p.actionPlan||'')+'</textarea>';
+  sec.querySelector('[data-action-plan]').addEventListener('input', e=>{
+    p.actionPlan = e.target.value; scheduleSave();
+  });
+  return sec;
+}
+
+function wireChipRows(scope, rows, onPick){
+  rows.forEach(row=>{
+    row.querySelectorAll('.chip').forEach(chipEl=>{
+      chipEl.addEventListener('click', ()=>{
+        const idx = row.dataset.cvIdx!=null ? parseInt(row.dataset.cvIdx,10) : null;
+        onPick(idx, parseInt(chipEl.dataset.val,10));
+      });
+    });
+  });
+}
+
+function wirePopover(scope){
+  scope.querySelectorAll('.help-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const pop = scope.querySelector('[data-popover="'+btn.dataset.pop+'"]');
+      if (!pop) return;
+      const rect = btn.getBoundingClientRect();
+      pop.style.display = pop.style.display==='none' ? 'block' : 'none';
+      pop.style.position = 'fixed';
+      pop.style.top = (rect.bottom+6)+'px';
+      pop.style.left = Math.min(rect.left, window.innerWidth-400)+'px';
+    });
+  });
+  scope.querySelectorAll('.close-x').forEach(x=>{
+    x.addEventListener('click', (e)=>{ e.target.closest('.popover').style.display='none'; });
+  });
+}
+
+document.getElementById('prevPerson').addEventListener('click', ()=>{ if(personIdx>0){personIdx--; renderEvaluate();} });
+document.getElementById('nextPerson').addEventListener('click', ()=>{ if(personIdx<DATA.people.length-1){personIdx++; renderEvaluate();} });
+
+/* keyboard: 1-5 scores focused chip row if any chiprow is hovered-focus; best-effort */
+document.addEventListener('keydown', (e)=>{
+  if (!DATA) return;
+  if (!/^[1-5]$/.test(e.key)) return;
+  const active = document.activeElement;
+  if (!active) return;
+  const row = active.closest && active.closest('.chiprow, .itp-trait');
+  if (!row) return;
+  const chips = row.querySelectorAll('.chip');
+  const val = parseInt(e.key,10);
+  chips.forEach(c=>{ if (parseInt(c.dataset.val,10)===val) c.click(); });
+});
+
+/* ============ RENDER: EXPORT ============ */
+function renderExport(){
+  const missing = [];
+  DATA.people.forEach(p=>{
+    const s = computeStats(p);
+    if (s.noteRequired && !p.overallNote.trim()) missing.push(p.name);
+  });
+  const box = document.getElementById('exportChecklist');
+  if (missing.length){
+    box.style.display = 'block';
+    box.innerHTML = '<b>Missing required notes:</b> '+missing.map(esc).join(', ')+'. You can still export — this is a reminder, not a block.';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function buildExportPayload(){
+  return {
+    schema: "einstein-pa-directs/v1",
+    quarter: "Q3 2026",
+    evaluator: { key: evaluatorKey, name: DATA.evaluatorName, role: DATA.evaluatorRole },
+    exportedAt: new Date().toISOString(),
+    people: DATA.people.map(p=>{
+      const s = computeStats(p);
+      return {
+        name: p.name, role: p.role || "", branch: p.branch || null, seeded: !!p.seeded,
+        coreValues: { items: p.coreValues.items.slice(), note: p.coreValues.note || "" },
+        itp: {
+          humble: {v:p.itp.humble.v, note:p.itp.humble.note||""},
+          hungry: {v:p.itp.hungry.v, note:p.itp.hungry.note||""},
+          smart:  {v:p.itp.smart.v,  note:p.itp.smart.note||""}
+        },
+        gwc: { get:p.gwc.get, want:p.gwc.want, capacity:p.gwc.capacity },
+        rehire: p.rehire,
+        overallNote: p.overallNote || "",
+        actionPlan: p.actionPlan || null,
+        composite: s.composite, grade: s.grade, wrongSeat: s.wrongSeat, belowBar: s.belowBar, complete: s.complete
+      };
+    })
+  };
+}
+
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  const missing = [];
+  DATA.people.forEach(p=>{
+    const s = computeStats(p);
+    if (s.noteRequired && !p.overallNote.trim()) missing.push(p.name);
+  });
+  if (missing.length){
+    const proceed = confirm('Missing required notes for: '+missing.join(', ')+'.\n\nExport anyway?');
+    if (!proceed) return;
+  }
+  const payload = buildExportPayload();
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'pa-directs-'+evaluatorKey+'-q3-2026.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Exported. Send the file to Cameron.');
+});
+
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const json = JSON.parse(ev.target.result);
+      if (json.schema !== 'einstein-pa-directs/v1'){ throw new Error('Not a pa-directs export file.'); }
+      const key = json.evaluator && json.evaluator.key;
+      if (key !== evaluatorKey){
+        document.getElementById('importStatus').textContent = 'This file is for '+(key||'another')+' — you\'re currently evaluating as '+evaluatorKey+'. Switch evaluator first.';
+        return;
+      }
+      let merged = 0, added = 0;
+      json.people.forEach(imp=>{
+        const existing = DATA.people.find(p=>p.name === imp.name);
+        const rec = freshPerson({name:imp.name, role:imp.role, branch:imp.branch, seeded:imp.seeded});
+        rec.coreValues.items = imp.coreValues.items.slice();
+        rec.coreValues.note = imp.coreValues.note || "";
+        ['humble','hungry','smart'].forEach(k=>{ rec.itp[k] = {v: imp.itp[k].v, note: imp.itp[k].note||""}; });
+        rec.gwc = Object.assign({get:null,want:null,capacity:null}, imp.gwc);
+        rec.rehire = imp.rehire;
+        rec.overallNote = imp.overallNote || "";
+        rec.actionPlan = imp.actionPlan || null;
+        if (existing){ Object.assign(existing, rec); merged++; }
+        else { DATA.people.push(rec); added++; }
+      });
+      save();
+      document.getElementById('importStatus').textContent = 'Imported: '+merged+' updated, '+added+' added.';
+      renderRoster();
+    }catch(err){
+      document.getElementById('importStatus').textContent = 'Import failed: '+err.message;
+    }
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('btnSwitch').addEventListener('click', backToPicker);
+
+document.querySelectorAll('#mainNav button').forEach(btn=>{
+  btn.addEventListener('click', ()=> switchView(btn.dataset.view));
+});
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s){ return esc(s).replace(/\n/g,' '); }
+
+/* ============ INIT ============ */
+renderPicker();
+
+})();
+</script>
+</body>
+</html>

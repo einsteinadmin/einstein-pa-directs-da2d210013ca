@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>People Analyzer — Directs Rollup</title>
+<style>
+:root{
+  --orange-50:#FEF6EC; --orange-100:#FDE3C2; --orange-200:#FABD84; --orange-500:#EF8B22; --orange-700:#D96B10; --orange-900:#CC5500;
+  --navy-50:#EEF1F4; --navy-100:#CDD5DA; --navy-200:#9AADB7; --navy-400:#507080; --navy-500:#27343D; --navy-700:#1A2329; --navy-900:#0B1014;
+  --blue-50:#EBF4FB; --blue-100:#C3DFEF; --blue-500:#0979C3; --blue-700:#065E9A; --blue-900:#023B63;
+  --grey-50:#F4F5F5; --grey-100:#E2E3E4; --grey-200:#C0C2C4; --grey-400:#787C7F; --grey-500:#53575A; --grey-700:#363839; --grey-900:#191A1B;
+  --success:#69995D; --error:#CC0100;
+  --text-faint:#5F6468;
+  --radius-sm:6px; --radius-md:12px; --radius-lg:20px; --radius-pill:999px;
+  --shadow-sm:0 1px 2px rgba(39,52,61,.08); --shadow-md:0 4px 12px rgba(39,52,61,.10); --shadow-lg:0 12px 32px rgba(39,52,61,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:16px}
+body{font-family:'Roboto',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:var(--grey-700);background:var(--grey-50);font-size:14px;line-height:1.5;min-width:1000px}
+h1,h2,h3,h4{color:var(--navy-500);font-weight:700}
+a{color:var(--blue-500)}
+button{font:inherit;cursor:pointer}
+::selection{background:var(--blue-100)}
+
+#privacyBar{background:var(--blue-900);color:#fff;text-align:center;font-size:11.5px;padding:6px 12px}
+
+#appHeader{background:var(--navy-500);color:#fff;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow-md)}
+#appHeader .brand{display:flex;align-items:baseline;gap:10px}
+#appHeader .brand .bebas{font-family:'Bebas Neue','Roboto',sans-serif;font-size:26px;letter-spacing:.03em;color:#fff}
+#appHeader .brand .tag{font-size:12px;color:var(--navy-100)}
+#appHeader .clearbtn{background:none;border:1px solid var(--navy-200);color:#fff;border-radius:var(--radius-pill);padding:6px 14px;font-size:11.5px;font-weight:700}
+#appHeader .clearbtn:hover{background:var(--navy-700)}
+
+main{max-width:1300px;margin:0 auto;padding:28px 28px 90px}
+
+/* ---- Drop zone ---- */
+#dropZone{border:2px dashed var(--grey-200);border-radius:var(--radius-lg);background:#fff;padding:60px 30px;text-align:center;margin-bottom:24px;transition:.15s}
+#dropZone.drag{border-color:var(--blue-500);background:var(--blue-50)}
+#dropZone h2{font-size:20px;margin-bottom:8px}
+#dropZone p{color:var(--grey-400);font-size:13px;margin-bottom:18px}
+#dropZone label.filebtn{display:inline-block;background:var(--navy-500);color:#fff;border:none;border-radius:var(--radius-sm);padding:11px 22px;font-size:13px;font-weight:700;cursor:pointer}
+#dropZone label.filebtn:hover{background:var(--navy-700)}
+#dropZone input[type=file]{display:none}
+
+.file-errors{margin-top:16px;text-align:left}
+.file-error{background:#F8DCDC;color:#8E0000;border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;margin-bottom:6px}
+
+/* ---- Company strip ---- */
+.summary-strip{display:flex;gap:28px;align-items:center;background:#fff;border:1px solid var(--grey-100);border-radius:var(--radius-md);padding:16px 24px;margin-bottom:20px;flex-wrap:wrap}
+.summary-strip .stat{text-align:center}
+.summary-strip .stat b{display:block;font-size:22px;color:var(--navy-500)}
+.summary-strip .stat span{font-size:11px;color:var(--grey-400);text-transform:uppercase;letter-spacing:.04em}
+.summary-strip .spacer{margin-left:auto}
+
+/* ---- Leader cards ---- */
+.section-title{font-size:15px;color:var(--navy-500);margin:26px 0 12px;font-weight:700}
+.leader-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-bottom:10px}
+.leader-card{background:#fff;border:1px solid var(--grey-100);border-radius:var(--radius-md);padding:18px}
+.leader-card h3{font-size:14px;margin-bottom:2px}
+.leader-card .n{font-size:11px;color:var(--grey-400);margin-bottom:10px}
+.mini-bars{display:flex;gap:3px;height:10px;border-radius:5px;overflow:hidden;margin-bottom:8px}
+.mini-bars span{display:block}
+.mini-bars .a{background:var(--success)}
+.mini-bars .b{background:var(--orange-500)}
+.mini-bars .c{background:var(--error)}
+.leader-card .legend{display:flex;gap:10px;font-size:10.5px;color:var(--grey-400)}
+.leader-card .comp{font-size:11px;color:var(--grey-400);margin-top:6px}
+.leader-card.pending{opacity:.55;border-style:dashed}
+
+/* ---- Watch list ---- */
+.watch-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--grey-100);border-radius:var(--radius-md);overflow:hidden;font-size:12.5px}
+.watch-table th{background:var(--navy-50);color:var(--navy-500);text-align:left;padding:9px 14px;font-size:10.5px;text-transform:uppercase;letter-spacing:.02em;cursor:pointer}
+.watch-table td{padding:9px 14px;border-top:1px solid var(--grey-50);vertical-align:top}
+.watch-table tr:hover td{background:var(--grey-50);cursor:pointer}
+.badge{display:inline-block;padding:2px 9px;border-radius:var(--radius-pill);font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.badge.c{background:#F8DCDC;color:#8E0000}
+.badge.wrongseat{background:var(--orange-100);color:var(--orange-900)}
+.badge.rehireno{background:#F8DCDC;color:#8E0000}
+.badge.belowbar{background:#F8DCDC;color:#8E0000}
+.noaction{color:var(--error);font-weight:700;font-size:11px}
+
+/* ---- Weakest values ---- */
+.value-bars{background:#fff;border:1px solid var(--grey-100);border-radius:var(--radius-md);padding:18px 22px}
+.value-row{display:grid;grid-template-columns:260px 1fr 50px;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--grey-50)}
+.value-row:first-child{border-top:none}
+.value-row .vname{font-size:12.5px;color:var(--navy-500);font-weight:700}
+.value-track{height:10px;background:var(--grey-100);border-radius:5px;overflow:hidden}
+.value-fill{height:100%;background:var(--blue-500)}
+.value-row .vscore{font-size:12px;color:var(--grey-500);text-align:right}
+
+/* ---- Modal ---- */
+.modal-overlay{position:fixed;inset:0;background:rgba(11,16,20,.55);display:none;align-items:center;justify-content:center;z-index:500}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:var(--radius-lg);max-width:640px;width:92%;max-height:85vh;overflow-y:auto;padding:28px 30px;box-shadow:var(--shadow-lg)}
+.modal h2{font-size:20px;margin-bottom:2px}
+.modal .subrole{font-size:12px;color:var(--grey-400);margin-bottom:16px}
+.modal .close-x{float:right;background:none;border:none;font-size:18px;color:var(--grey-400);cursor:pointer}
+.modal table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:14px}
+.modal table td{padding:6px 4px;border-top:1px solid var(--grey-50)}
+.modal table td:first-child{color:var(--grey-500);width:45%}
+.modal table td:last-child{font-weight:700;color:var(--navy-500)}
+.modal .notebox{background:var(--grey-50);border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;margin-bottom:10px;white-space:pre-wrap}
+.modal h4{font-size:12.5px;margin:14px 0 6px;color:var(--navy-500)}
+
+.empty-state{text-align:center;color:var(--grey-400);padding:60px 0;font-size:13px}
+
+footer{background:var(--navy-700);color:var(--navy-100);text-align:center;padding:16px;font-size:11px}
+.toast{position:fixed;bottom:20px;right:24px;background:var(--navy-500);color:#fff;padding:10px 18px;border-radius:var(--radius-sm);font-size:12.5px;box-shadow:var(--shadow-lg);opacity:0;transform:translateY(6px);transition:.25s;z-index:300;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<div id="privacyBar">Room view — data loaded here came from exported files, dropped in by Cameron. Nothing auto-syncs.</div>
+
+<header id="appHeader">
+  <div class="brand">
+    <span class="bebas">PEOPLE ANALYZER</span>
+    <span class="tag">Directs rollup · Q3 2026 gut-check</span>
+  </div>
+  <button class="clearbtn" id="btnClear">Clear all</button>
+</header>
+
+<main>
+  <div id="dropZone">
+    <h2>Drop the exported files here</h2>
+    <p>Accepts multiple <code>pa-directs-*.json</code> files at once. Each leader's export gets checked against the schema — bad files get flagged, not silently dropped.</p>
+    <label class="filebtn" for="fileInput">Choose files…</label>
+    <input type="file" id="fileInput" accept="application/json" multiple>
+    <div class="file-errors" id="fileErrors"></div>
+  </div>
+
+  <div id="rollup" style="display:none">
+    <div class="summary-strip" id="companyStrip"></div>
+
+    <div class="section-title">Per leader</div>
+    <div class="leader-grid" id="leaderGrid"></div>
+
+    <div class="section-title">Watch list</div>
+    <div style="overflow-x:auto"><table class="watch-table" id="watchTable"></table></div>
+
+    <div class="section-title">Weakest values (company average, lowest first)</div>
+    <div class="value-bars" id="valueBars"></div>
+  </div>
+
+  <div class="empty-state" id="emptyState">Nothing loaded yet. Drop the JSON exports above.</div>
+</main>
+
+<footer>Einstein Moving Company — internal. Your entries stay in this browser (localStorage) until you export. Nothing is sent anywhere.</footer>
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+const STORAGE_KEY = "einstein-pa-directs-results-q3";
+const ALL_EVALUATORS = ["brian","mike","amanda","matisen","anne","nhel","paul"];
+const EVALUATOR_NAMES = {
+  brian:"Brian Herzig", mike:"Mike Vandenbroader", amanda:"Amanda Ware",
+  matisen:"Matisen Harper", anne:"Anne Bosse", nhel:"Nhel Banayad", paul:"Paul Morin"
+};
+const CV_ITEMS = [
+  "Communicate clearly and with kindness",
+  "Hustle but don't rush",
+  "Ownership over results",
+  "Improve with Enthusiasm",
+  "Conscientious attention to detail",
+  "Elevate attitudes",
+  "Support Generously"
+];
+
+let FILES = []; // [{fileName, payload}]
+let watchSort = {col:'name', dir:1};
+
+function load(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw){
+    try{ FILES = JSON.parse(raw); }catch(e){ FILES = []; }
+  }
+  render();
+}
+function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(FILES)); }
+
+function validatePayload(json){
+  if (!json || typeof json !== 'object') return 'Not a JSON object.';
+  if (json.schema !== 'einstein-pa-directs/v1') return 'Wrong schema (expected einstein-pa-directs/v1).';
+  if (!json.evaluator || !json.evaluator.key) return 'Missing evaluator.key.';
+  if (!Array.isArray(json.people)) return 'Missing people[] array.';
+  return null;
+}
+
+function handleFiles(fileList){
+  const errors = [];
+  let pending = fileList.length;
+  if (!pending) return;
+  Array.from(fileList).forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      pending--;
+      try{
+        const json = JSON.parse(e.target.result);
+        const err = validatePayload(json);
+        if (err){ errors.push(file.name + ': ' + err); }
+        else{
+          const existingIdx = FILES.findIndex(f => f.payload.evaluator.key === json.evaluator.key);
+          const entry = {fileName:file.name, payload:json};
+          if (existingIdx >= 0) FILES[existingIdx] = entry; else FILES.push(entry);
+        }
+      }catch(parseErr){
+        errors.push(file.name + ': could not parse JSON (' + parseErr.message + ')');
+      }
+      if (pending === 0){
+        persist();
+        showFileErrors(errors);
+        render();
+        if (!errors.length) showToast('Loaded ' + fileList.length + ' file(s).');
+      }
+    };
+    reader.onerror = ()=>{
+      pending--;
+      errors.push(file.name + ': could not read file.');
+      if (pending===0){ persist(); showFileErrors(errors); render(); }
+    };
+    reader.readAsText(file);
+  });
+}
+
+function showFileErrors(errors){
+  const box = document.getElementById('fileErrors');
+  box.innerHTML = errors.map(e=>'<div class="file-error">'+esc(e)+'</div>').join('');
+}
+
+/* ---- Drop zone wiring ---- */
+const dz = document.getElementById('dropZone');
+['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.remove('drag'); }));
+dz.addEventListener('drop', e=>{ if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); });
+document.getElementById('fileInput').addEventListener('change', e=>{ if (e.target.files.length) handleFiles(e.target.files); e.target.value=''; });
+
+document.getElementById('btnClear').addEventListener('click', ()=>{
+  if (!FILES.length) return;
+  if (confirm('Clear all loaded files from this room view? This does not touch any leader\'s browser data.')){
+    FILES = []; persist(); render();
+  }
+});
+
+/* ---- Computation ---- */
+function personStats(person){
+  // Prefer computed fields already in the export; fall back to recompute if absent.
+  if (person.composite !== undefined && person.grade !== undefined) return person;
+  const scored = [];
+  (person.coreValues && person.coreValues.items || []).forEach(v=>{ if (v!=null) scored.push(v); });
+  ['humble','hungry','smart'].forEach(k=>{ const v = person.itp && person.itp[k] && person.itp[k].v; if (v!=null) scored.push(v); });
+  const composite = scored.length ? scored.reduce((a,b)=>a+b,0)/scored.length : null;
+  const grade = composite==null ? null : (composite>=4.5?'A':(composite>=4.0?'B':'C'));
+  const gwc = person.gwc || {};
+  const wrongSeat = [gwc.get, gwc.want, gwc.capacity].some(v=>v===false);
+  const belowBar = (person.coreValues && person.coreValues.items || []).some(v=>v!=null && v<=2);
+  return Object.assign({}, person, {composite, grade, wrongSeat, belowBar});
+}
+
+function render(){
+  const hasData = FILES.length > 0;
+  document.getElementById('rollup').style.display = hasData ? 'block' : 'none';
+  document.getElementById('emptyState').style.display = hasData ? 'none' : 'block';
+  if (!hasData) return;
+
+  renderCompanyStrip();
+  renderLeaderGrid();
+  renderWatchTable();
+  renderValueBars();
+}
+
+function renderCompanyStrip(){
+  let total=0, a=0,b=0,c=0, wrongSeat=0, rehireNo=0;
+  FILES.forEach(f=>{
+    f.payload.people.forEach(person=>{
+      const s = personStats(person);
+      total++;
+      if (s.grade==='A') a++; else if (s.grade==='B') b++; else if (s.grade==='C') c++;
+      if (s.wrongSeat) wrongSeat++;
+      if (person.rehire === false) rehireNo++;
+    });
+  });
+  const leadersIn = FILES.length;
+  const leadersPending = ALL_EVALUATORS.length - leadersIn;
+  const pctA = total ? Math.round(a/total*100) : 0;
+  const strip = document.getElementById('companyStrip');
+  strip.innerHTML =
+    stat(total,'People evaluated') +
+    stat(a+' / '+b+' / '+c, 'A / B / C') +
+    stat(pctA+'%','A-players') +
+    stat(wrongSeat,'Wrong seat') +
+    stat(rehireNo,'Rehire: No') +
+    '<div class="spacer stat">'+stat(leadersIn+' / '+ALL_EVALUATORS.length, 'Leaders in').replace('stat','')+'</div>';
+  // simpler: leaders in/pending as its own stat block
+  strip.innerHTML =
+    stat(total,'People evaluated') +
+    stat(a+' / '+b+' / '+c, 'A / B / C') +
+    stat(pctA+'%','A-players') +
+    stat(wrongSeat,'Wrong seat') +
+    stat(rehireNo,'Rehire: No') +
+    stat(leadersIn+' / '+ALL_EVALUATORS.length,'Leaders in (of 7)');
+}
+
+function stat(val,label){
+  return '<div class="stat"><b>'+val+'</b><span>'+label+'</span></div>';
+}
+
+function renderLeaderGrid(){
+  const grid = document.getElementById('leaderGrid');
+  grid.innerHTML = '';
+  const loadedKeys = FILES.map(f=>f.payload.evaluator.key);
+  ALL_EVALUATORS.forEach(key=>{
+    const file = FILES.find(f=>f.payload.evaluator.key === key);
+    const card = document.createElement('div');
+    if (!file){
+      card.className = 'leader-card pending';
+      card.innerHTML = '<h3>'+esc(EVALUATOR_NAMES[key]||key)+'</h3><div class="n">Not submitted yet</div>';
+      grid.appendChild(card);
+      return;
+    }
+    const people = file.payload.people.map(personStats);
+    let a=0,b=0,c=0,complete=0;
+    people.forEach(p=>{ if(p.grade==='A')a++; else if(p.grade==='B')b++; else if(p.grade==='C')c++; if(p.complete)complete++; });
+    const n = people.length || 1;
+    card.className = 'leader-card';
+    card.innerHTML = '<h3>'+esc(file.payload.evaluator.name)+'</h3>'+
+      '<div class="n">'+people.length+' people · '+complete+'/'+people.length+' complete</div>'+
+      '<div class="mini-bars"><span class="a" style="width:'+(a/n*100)+'%"></span><span class="b" style="width:'+(b/n*100)+'%"></span><span class="c" style="width:'+(c/n*100)+'%"></span></div>'+
+      '<div class="legend"><span>A '+a+'</span><span>B '+b+'</span><span>C '+c+'</span></div>'+
+      '<div class="comp">'+esc(file.fileName)+'</div>';
+    grid.appendChild(card);
+  });
+}
+
+function collectWatchRows(){
+  const rows = [];
+  FILES.forEach(f=>{
+    f.payload.people.forEach(person=>{
+      const s = personStats(person);
+      const reasons = [];
+      if (s.grade === 'C') reasons.push('C grade');
+      if (s.wrongSeat) reasons.push('wrong seat');
+      if (person.rehire === false) reasons.push('rehire: No');
+      if (s.belowBar) reasons.push('below-bar value');
+      if (reasons.length){
+        rows.push({
+          name: person.name, leader: f.payload.evaluator.name, evaluatorKey: f.payload.evaluator.key,
+          reasons, grade: s.grade, actionPlan: person.actionPlan, composite: s.composite, person, fileName: f.fileName
+        });
+      }
+    });
+  });
+  return rows;
+}
+
+function renderWatchTable(){
+  const rows = collectWatchRows();
+  const table = document.getElementById('watchTable');
+  if (!rows.length){
+    table.innerHTML = '<tr><td style="padding:16px;color:var(--grey-400)">No watch-list items loaded yet.</td></tr>';
+    return;
+  }
+  rows.sort((r1,r2)=>{
+    let av = r1[watchSort.col], bv = r2[watchSort.col];
+    if (av==null) av=''; if (bv==null) bv='';
+    if (av<bv) return -1*watchSort.dir;
+    if (av>bv) return 1*watchSort.dir;
+    return 0;
+  });
+  let html = '<thead><tr>'+
+    th('name','Person')+th('leader','Leader')+th('grade','Grade')+'<th>Why</th><th>Action plan</th>'+
+    '</tr></thead><tbody>';
+  rows.forEach((r,i)=>{
+    const badges = r.reasons.map(reason=>{
+      if (reason==='C grade') return '<span class="badge c">C</span>';
+      if (reason==='wrong seat') return '<span class="badge wrongseat">Wrong seat</span>';
+      if (reason==='rehire: No') return '<span class="badge rehireno">Rehire No</span>';
+      if (reason==='below-bar value') return '<span class="badge belowbar">Below bar</span>';
+      return reason;
+    }).join(' ');
+    const actionCell = r.grade==='C'
+      ? (r.actionPlan && r.actionPlan.trim() ? esc(r.actionPlan).slice(0,90)+(r.actionPlan.length>90?'…':'') : '<span class="noaction">NO ACTION PLAN</span>')
+      : '<span class="muted" style="color:var(--grey-400)">—</span>';
+    html += '<tr data-row="'+i+'"><td>'+esc(r.name)+'</td><td>'+esc(r.leader)+'</td><td>'+(r.grade||'—')+'</td><td>'+badges+'</td><td>'+actionCell+'</td></tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+  table.querySelectorAll('th[data-col]').forEach(h=>{
+    h.addEventListener('click', ()=>{
+      const col = h.dataset.col;
+      if (watchSort.col === col) watchSort.dir *= -1; else { watchSort.col = col; watchSort.dir = 1; }
+      renderWatchTable();
+    });
+  });
+  table.querySelectorAll('tbody tr').forEach((tr,i)=>{
+    tr.addEventListener('click', ()=> openModal(rows[i]));
+  });
+}
+
+function th(col,label){
+  return '<th data-col="'+col+'">'+label+'</th>';
+}
+
+function renderValueBars(){
+  const sums = new Array(CV_ITEMS.length).fill(0);
+  const counts = new Array(CV_ITEMS.length).fill(0);
+  FILES.forEach(f=>{
+    f.payload.people.forEach(person=>{
+      const items = person.coreValues && person.coreValues.items || [];
+      items.forEach((v,i)=>{ if (v!=null){ sums[i]+=v; counts[i]++; } });
+    });
+  });
+  const avgs = CV_ITEMS.map((label,i)=>({label, avg: counts[i] ? sums[i]/counts[i] : null, n: counts[i]}));
+  avgs.sort((a,b)=>{
+    if (a.avg==null) return 1;
+    if (b.avg==null) return -1;
+    return a.avg - b.avg;
+  });
+  const box = document.getElementById('valueBars');
+  box.innerHTML = avgs.map(a=>{
+    const pct = a.avg==null ? 0 : (a.avg/5*100);
+    return '<div class="value-row"><div class="vname">'+esc(a.label)+'</div>'+
+      '<div class="value-track"><div class="value-fill" style="width:'+pct+'%"></div></div>'+
+      '<div class="vscore">'+(a.avg==null?'—':a.avg.toFixed(2))+'</div></div>';
+  }).join('');
+}
+
+/* ---- Modal ---- */
+function openModal(row){
+  const p = row.person;
+  const overlay = document.getElementById('modalOverlay');
+  const body = document.getElementById('modalBody');
+  let rowsHtml = '';
+  (p.coreValues && p.coreValues.items || []).forEach((v,i)=>{
+    rowsHtml += '<tr><td>'+esc(CV_ITEMS[i])+'</td><td>'+(v==null?'—':v)+'</td></tr>';
+  });
+  ['humble','hungry','smart'].forEach(k=>{
+    const rec = p.itp && p.itp[k];
+    rowsHtml += '<tr><td>ITP — '+k+'</td><td>'+(rec && rec.v!=null ? rec.v : '—')+'</td></tr>';
+  });
+  const gwc = p.gwc || {};
+  rowsHtml += '<tr><td>GWC — Get it</td><td>'+fmtBool(gwc.get)+'</td></tr>';
+  rowsHtml += '<tr><td>GWC — Want it</td><td>'+fmtBool(gwc.want)+'</td></tr>';
+  rowsHtml += '<tr><td>GWC — Capacity</td><td>'+fmtBool(gwc.capacity)+'</td></tr>';
+  rowsHtml += '<tr><td>Enthusiastically rehire?</td><td>'+fmtBool(p.rehire)+'</td></tr>';
+
+  body.innerHTML =
+    '<button class="close-x" id="modalClose">✕</button>'+
+    '<h2>'+esc(p.name)+'</h2>'+
+    '<div class="subrole">'+esc(p.role||'')+(p.branch?' · '+esc(p.branch):'')+' — evaluated by '+esc(row.leader)+'</div>'+
+    '<table>'+rowsHtml+'</table>'+
+    (p.coreValues && p.coreValues.note ? '<h4>Core values note</h4><div class="notebox">'+esc(p.coreValues.note)+'</div>' : '')+
+    (p.overallNote ? '<h4>Overall note</h4><div class="notebox">'+esc(p.overallNote)+'</div>' : '')+
+    (p.actionPlan ? '<h4>Action plan</h4><div class="notebox">'+esc(p.actionPlan)+'</div>' : '')+
+    '<div class="tiny" style="color:var(--grey-400);margin-top:10px">From '+esc(row.fileName)+'</div>';
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  overlay.classList.add('show');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+document.getElementById('modalOverlay').addEventListener('click', e=>{ if (e.target.id==='modalOverlay') closeModal(); });
+
+function fmtBool(v){ if (v===true) return 'Yes'; if (v===false) return 'No'; return '—'; }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+load();
+
+})();
+</script>
+</body>
+</html>
