@@ -379,6 +379,17 @@ function loadEvaluator(key){
       }
     });
     if (added) save();
+    // Branch ordering (v1.2, 7/27): keep seeded people in roster order (grouped by branch);
+    // anyone the leader added by hand stays after the seeded group, in the order they added them.
+    const seedOrder = {};
+    ((ROSTERS[key]||{}).people||[]).forEach((p,i) => { seedOrder[p.name.toLowerCase()] = i; });
+    DATA.people.sort((a,b) => {
+      const ia = seedOrder[(a.name||"").toLowerCase()], ib = seedOrder[(b.name||"").toLowerCase()];
+      if (ia !== undefined && ib !== undefined) return ia - ib;
+      if (ia !== undefined) return -1;
+      if (ib !== undefined) return 1;
+      return 0;
+    });
   }
   if (!DATA){
     const seed = ROSTERS[key];
