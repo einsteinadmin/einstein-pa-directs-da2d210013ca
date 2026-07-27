@@ -269,21 +269,36 @@ footer{background:var(--navy-700);color:var(--navy-100);text-align:center;paddin
 const ROSTERS = {
   brian: { name:"Brian Herzig", role:"CTXH Regional Manager", people:[
     {name:"Calvin Hughes", role:"BM, North Austin", branch:"North Austin", extra:"transitioning out"},
-    {name:"Daniel Behseresht", role:"BM (incoming), North Austin", branch:"North Austin"},
+    {name:"Nick Dagel", role:"Manager, North Austin", branch:"North Austin"},
+    {name:"Rance Pope", role:"Manager, North Austin", branch:"North Austin"},
     {name:"Chris Anderson", role:"BM, South Austin", branch:"South Austin"},
+    {name:"Daniel Behseresht", role:"Manager, South Austin (incoming N. Austin BM)", branch:"South Austin"},
+    {name:"Hector Zavala", role:"Manager, South Austin", branch:"South Austin"},
+    {name:"Jespah Lara", role:"Flex Manager, South Austin", branch:"South Austin"},
     {name:"Frank Williams", role:"BM, Leander", branch:"Leander"},
+    {name:"Garrison Cobe", role:"Manager, Leander", branch:"Leander"},
     {name:"Dustin Street", role:"BM, San Antonio", branch:"San Antonio"},
-    {name:"Sergio Buenrostro", role:"BM, Houston", branch:"Houston"}
+    {name:"Lukas Konrad", role:"Operations Manager, San Antonio", branch:"San Antonio"},
+    {name:"Cameron Klepac", role:"Manager, San Antonio", branch:"San Antonio"},
+    {name:"Sergio Buenrostro", role:"BM, Houston", branch:"Houston"},
+    {name:"Joel Villatoro", role:"Manager, Houston", branch:"Houston"},
+    {name:"Alex Tran", role:"Manager, Houston", branch:"Houston"}
   ]},
   mike: { name:"Mike Vandenbroader", role:"DFWT Regional Manager + Head of Ops", people:[
     {name:"Chris Beattie", role:"BM, Dallas", branch:"Dallas"},
+    {name:"Landon Vaughan", role:"Manager, Dallas", branch:"Dallas"},
+    {name:"Tabi Enoh", role:"Manager, Dallas", branch:"Dallas"},
     {name:"Grant Hardison", role:"BM, Fort Worth", branch:"Fort Worth"},
+    {name:"Erik Orama", role:"Manager, Fort Worth", branch:"Fort Worth"},
     {name:"Khevan Dueck", role:"BM, McKinney", branch:"McKinney"},
+    {name:"Zachary Krodel", role:"Manager, McKinney", branch:"McKinney"},
     {name:"Jack Davis", role:"BM, Garland", branch:"Garland"},
-    {name:"Steven Anderson", role:"BM, Tampa", branch:"Tampa"}
+    {name:"Steven Anderson", role:"BM, Tampa", branch:"Tampa"},
+    {name:"Shane Heaberlin", role:"Operations Manager, Tampa", branch:"Tampa"}
   ]},
   amanda: { name:"Amanda Ware", role:"Director of CX", people:[
     {name:"Nhel Banayad", role:"Sales Team Lead", branch:null},
+    {name:"Tet", role:"Sales Enablement Manager", branch:null, extra:"Nhel's direct — Amanda reviews too"},
     {name:"Carly", role:"Claims Manager", branch:null}
   ]},
   matisen: { name:"Matisen Harper", role:"Director of IT", people:[
@@ -295,7 +310,9 @@ const ROSTERS = {
   nhel: { name:"Nhel Banayad", role:"Sales Team Lead (runs via Amanda's org)", people:[
     {name:"Tet", role:"Sales Enablement Manager", branch:null}
   ]},
-  paul: { name:"Paul Morin", role:"CFO/COO", people:[], helper:"Add anyone you directly manage. (Vendor/controller evals live in the leadership-tier tool.)" }
+  paul: { name:"Paul Morin", role:"CFO/COO", people:[
+    {name:"Ben Young (Prosper)", role:"VCFO — Prosper", branch:null}
+  ], helper:"Add anyone else you directly manage. (Other vendor/controller evals live in the leadership-tier tool.)" }
 };
 
 const CV_ITEMS = [
@@ -347,6 +364,21 @@ function loadEvaluator(key){
   const raw = localStorage.getItem(storageKey(key));
   if (raw){
     try{ DATA = JSON.parse(raw); }catch(e){ DATA = null; }
+  }
+  if (DATA && DATA.people){
+    // Roster top-up (v1.1, 7/27): rosters were fleshed out to full seats after launch —
+    // append any seed person missing from this browser's saved state, by name.
+    // Existing people and their scores are never touched.
+    const have = {};
+    DATA.people.forEach(p => { have[(p.name||"").toLowerCase()] = true; });
+    let added = false;
+    ((ROSTERS[key]||{}).people||[]).forEach(p => {
+      if (!have[p.name.toLowerCase()]){
+        DATA.people.push(freshPerson(Object.assign({seeded:true}, p)));
+        added = true;
+      }
+    });
+    if (added) save();
   }
   if (!DATA){
     const seed = ROSTERS[key];
