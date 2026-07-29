@@ -52,6 +52,8 @@ main{max-width:1200px;margin:0 auto;padding:28px 28px 90px}
 #pickerScreen .ptitle{font-family:'Bebas Neue','Roboto',sans-serif;font-size:34px;letter-spacing:.02em;color:var(--navy-500);margin-bottom:6px}
 #pickerScreen .psub{color:var(--grey-400);font-size:13px;margin-bottom:22px}
 .picker-privacy{background:var(--blue-50);border:1px solid var(--blue-100);border-radius:var(--radius-md);padding:14px 18px;font-size:12.5px;color:var(--blue-900);margin-bottom:26px;line-height:1.5}
+.picker-groups{display:flex;flex-direction:column;gap:28px}
+.picker-group-heading{font-family:'Bebas Neue','Roboto',sans-serif;font-size:15px;letter-spacing:.04em;color:var(--grey-400);text-transform:uppercase;margin-bottom:12px}
 .picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
 .picker-card{background:#fff;border:1px solid var(--grey-100);border-radius:var(--radius-md);padding:20px;box-shadow:var(--shadow-sm);text-align:left;cursor:pointer}
 .picker-card:hover{border-color:var(--blue-500);box-shadow:var(--shadow-md)}
@@ -151,6 +153,7 @@ main{max-width:1200px;margin:0 auto;padding:28px 28px 90px}
 
 textarea.narrative{width:100%;min-height:90px;border:1px solid var(--grey-200);border-radius:var(--radius-sm);padding:12px;font:inherit;font-size:13px;resize:vertical}
 textarea.narrative.note-required{border-color:var(--orange-500);background:var(--orange-50)}
+textarea.narrative.small-note{min-height:48px;margin-top:8px}
 .reqflag{font-size:10.5px;color:var(--orange-900);font-weight:700;margin-top:6px}
 
 .itp-trait{border-top:1px solid var(--grey-50);padding:14px 0}
@@ -158,6 +161,7 @@ textarea.narrative.note-required{border-color:var(--orange-500);background:var(-
 .itp-trait .tname{font-size:13px;font-weight:700;color:var(--navy-500)}
 .itp-trait .tdef{font-size:11.5px;color:var(--grey-400);margin-bottom:8px}
 .itp-trait input.tnote{width:100%;margin-top:8px;border:1px solid var(--grey-200);border-radius:var(--radius-sm);padding:7px 10px;font:inherit;font-size:12.5px}
+.itp-trait input.tnote.note-required{border-color:var(--orange-500);background:var(--orange-50)}
 
 .gwc-grid{display:flex;gap:24px;flex-wrap:wrap}
 .gwc-item{flex:1;min-width:160px}
@@ -192,7 +196,7 @@ footer{background:var(--navy-700);color:var(--navy-100);text-align:center;paddin
   <div class="ptitle">WHO ARE YOU?</div>
   <div class="psub">People Analyzer — Directs tier · Q3 2026. Pick your name to load (or start) your roster.</div>
   <div class="picker-privacy">This is a lighter version of the Roundtable tool, for evaluating your own direct reports. Everything you enter lives in this browser's local storage. Nothing leaves until you go to <b>Export</b> and download a file to send to Cameron.</div>
-  <div class="picker-grid" id="pickerGrid"></div>
+  <div class="picker-groups" id="pickerGrid"></div>
 </div>
 
 <!-- APP -->
@@ -267,7 +271,7 @@ footer{background:var(--navy-700);color:var(--navy-100);text-align:center;paddin
 
 /* ============ SEED ROSTERS ============ */
 const ROSTERS = {
-  brian: { name:"Brian Herzig", role:"CTXH Regional Manager", people:[
+  brian: { name:"Brian Herzig", role:"CTXH Regional Manager", group:"Leadership", people:[
     {name:"Calvin Hughes", role:"BM, North Austin", branch:"North Austin", extra:"transitioning out"},
     {name:"Nick Dagel", role:"Manager, North Austin", branch:"North Austin"},
     {name:"Rance Pope", role:"Manager, North Austin", branch:"North Austin"},
@@ -284,7 +288,7 @@ const ROSTERS = {
     {name:"Joel Villatoro", role:"Manager, Houston", branch:"Houston"},
     {name:"Alex Tran", role:"Manager, Houston", branch:"Houston"}
   ]},
-  mike: { name:"Mike Vandenbroader", role:"DFWT Regional Manager + Head of Ops", people:[
+  mike: { name:"Mike Vandenbroader", role:"DFWT Regional Manager + Head of Ops", group:"Leadership", people:[
     {name:"Chris Beattie", role:"BM, Dallas", branch:"Dallas"},
     {name:"Landon Vaughan", role:"Manager, Dallas", branch:"Dallas"},
     {name:"Tabi Enoh", role:"Manager, Dallas", branch:"Dallas"},
@@ -296,23 +300,60 @@ const ROSTERS = {
     {name:"Steven Anderson", role:"BM, Tampa", branch:"Tampa"},
     {name:"Shane Heaberlin", role:"Operations Manager, Tampa", branch:"Tampa"}
   ]},
-  amanda: { name:"Amanda Ware", role:"Director of CX", people:[
+  amanda: { name:"Amanda Ware", role:"Director of CX", group:"Leadership", people:[
     {name:"Nhel Banayad", role:"Sales Team Lead", branch:null},
     {name:"Tet", role:"Sales Enablement Manager", branch:null, extra:"Nhel's direct — Amanda reviews too"},
     {name:"Carly", role:"Claims Manager", branch:null}
   ]},
-  matisen: { name:"Matisen Harper", role:"Director of IT", people:[
+  matisen: { name:"Matisen Harper", role:"Director of IT", group:"Leadership", people:[
     {name:"Fabian", role:"Senior Developer", branch:null}
   ]},
-  anne: { name:"Anne Bosse", role:"Director of Employee Experience", people:[
+  anne: { name:"Anne Bosse", role:"Director of Employee Experience", group:"Leadership", people:[
     {name:"Jalissa", role:"HR Generalist", branch:null}
   ]},
-  nhel: { name:"Nhel Banayad", role:"Sales Team Lead (runs via Amanda's org)", people:[
+  nhel: { name:"Nhel Banayad", role:"Sales Team Lead (runs via Amanda's org)", group:"Leadership", people:[
     {name:"Tet", role:"Sales Enablement Manager", branch:null}
   ]},
-  paul: { name:"Paul Morin", role:"CFO/COO", people:[
+  paul: { name:"Paul Morin", role:"CFO/COO", group:"Leadership", people:[
     {name:"Ben Young (Prosper)", role:"VCFO — Prosper", branch:null}
-  ], helper:"Add anyone else you directly manage. (Other vendor/controller evals live in the leadership-tier tool.)" }
+  ], helper:"Add anyone else you directly manage. (Other vendor/controller evals live in the leadership-tier tool.)" },
+
+  // ===== Branch Manager evaluators (added 7/29 — Cameron's QGR Day-1 ruling: each BM evaluates
+  // their own ops/field/flex managers). Rosters seeded verbatim from the Brian/Mike rosters above
+  // (same people, this time under their direct BM instead of the regional manager). =====
+  chris_anderson: { name:"Chris Anderson", role:"BM, South Austin", group:"Branch Managers", people:[
+    {name:"Hector Zavala", role:"Manager", branch:"South Austin"},
+    {name:"Jespah Lara", role:"Flex Manager", branch:"South Austin"}
+  ]},
+  daniel_behseresht: { name:"Daniel Behseresht", role:"BM, North Austin (incoming)", group:"Branch Managers", people:[
+    {name:"Nick Dagel", role:"Ops Manager", branch:"North Austin"},
+    {name:"Rance Pope", role:"Manager", branch:"North Austin"}
+  ]},
+  frank_williams: { name:"Frank Williams", role:"BM, Leander", group:"Branch Managers", people:[
+    {name:"Garrison Cobe", role:"Manager", branch:"Leander"}
+  ]},
+  dustin_street: { name:"Dustin Street", role:"BM, San Antonio", group:"Branch Managers", people:[
+    {name:"Lukas Konrad", role:"Operations Manager", branch:"San Antonio"},
+    {name:"Cameron Klepac", role:"Manager", branch:"San Antonio"}
+  ]},
+  sergio_buenrostro: { name:"Sergio Buenrostro", role:"BM, Houston", group:"Branch Managers", people:[
+    {name:"Joel Villatoro", role:"Manager", branch:"Houston"},
+    {name:"Alex Tran", role:"Manager", branch:"Houston"}
+  ]},
+  chris_beattie: { name:"Chris Beattie", role:"BM, Dallas", group:"Branch Managers", people:[
+    {name:"Landon Vaughan", role:"Manager", branch:"Dallas"},
+    {name:"Tabi Enoh", role:"Manager", branch:"Dallas"}
+  ]},
+  grant_hardison: { name:"Grant Hardison", role:"BM, Fort Worth", group:"Branch Managers", people:[
+    {name:"Erik Orama", role:"Manager", branch:"Fort Worth"}
+  ]},
+  khevan_dueck: { name:"Khevan Dueck", role:"BM, McKinney", group:"Branch Managers", people:[
+    {name:"Zachary Krodel", role:"Manager", branch:"McKinney"}
+  ]},
+  jack_davis: { name:"Jack Davis", role:"BM, Garland", group:"Branch Managers", people:[], helper:"No seeded reports yet — add your team below." },
+  steven_anderson: { name:"Steven Anderson", role:"BM, Tampa", group:"Branch Managers", people:[
+    {name:"Shane Heaberlin", role:"Operations Manager", branch:"Tampa"}
+  ]}
 };
 
 const CV_ITEMS = [
@@ -342,21 +383,37 @@ let saveTimer = null;
 
 function storageKey(key){ return "einstein-pa-directs-q3-" + key; }
 
+// Default-3 (Cameron's ruling, 7/29 QGR Day 1): every CHOICES value and ITP trait on a BRAND NEW
+// person starts at 3 ("meets the bar" / "sometimes, with prompting") instead of blank, so picking
+// 4 or 5 is an intentional act. This only fires here, at person creation — freshPerson() is called
+// for a person never before saved to this browser (new roster load, roster top-up, add-a-person).
+// It never touches anyone already in localStorage; see migratePerson() for how already-saved
+// people pick up new fields (itemNotes / gwc.notes) without their existing scores being touched.
 function freshPerson(seed){
   return {
     name: seed.name, role: seed.role || "", branch: seed.branch || null,
     seeded: !!seed.seeded,
-    coreValues: { items: new Array(CV_ITEMS.length).fill(null), note: "" },
+    coreValues: { items: new Array(CV_ITEMS.length).fill(3), itemNotes: new Array(CV_ITEMS.length).fill(""), note: "" },
     itp: {
-      humble: {v:null, note:""},
-      hungry: {v:null, note:""},
-      smart: {v:null, note:""}
+      humble: {v:3, note:""},
+      hungry: {v:3, note:""},
+      smart: {v:3, note:""}
     },
-    gwc: { get:null, want:null, capacity:null },
+    gwc: { get:null, want:null, capacity:null, notes:{get:"",want:"",capacity:""} },
     rehire: null,
     overallNote: "",
     actionPlan: null
   };
+}
+
+// Additive-only migration for people already saved in this browser under the pre-7/29 schema —
+// adds the per-item note buckets (itemNotes / gwc.notes) if missing. Never touches an existing
+// score, existing note, or existing null — matches the "never overwrite existing stored score"
+// rule. Idempotent: safe to call on every load.
+function migratePerson(p){
+  if (!p.coreValues.itemNotes) p.coreValues.itemNotes = new Array(CV_ITEMS.length).fill("");
+  if (!p.gwc.notes) p.gwc.notes = {get:"",want:"",capacity:""};
+  return p;
 }
 
 function loadEvaluator(key){
@@ -366,6 +423,9 @@ function loadEvaluator(key){
     try{ DATA = JSON.parse(raw); }catch(e){ DATA = null; }
   }
   if (DATA && DATA.people){
+    // Schema top-up (v1.3, 7/29): add itemNotes/gwc.notes buckets to anyone saved under the
+    // pre-note-gate schema. Additive only — see migratePerson().
+    DATA.people.forEach(migratePerson);
     // Roster top-up (v1.1, 7/27): rosters were fleshed out to full seats after launch —
     // append any seed person missing from this browser's saved state, by name.
     // Existing people and their scores are never touched.
@@ -436,23 +496,60 @@ function computeStats(p){
   const cvComplete = p.coreValues.items.every(v => v!=null);
   const itpComplete = ITP_TRAITS.every(t => p.itp[t.key].v != null);
   const gwcSet = gwcVals.every(v => v !== null && v !== undefined);
-  const complete = cvComplete && itpComplete && gwcSet;
+
+  // Universal note gate (Cameron's ruling, 7/29 QGR Day 1): every scored CHOICES value, ITP trait,
+  // and GWC answer — including 5s — needs a written note, "so we know why they think they are
+  // standard bearers." missingNotes lists exactly which ones still need one; a person doesn't
+  // count as complete, and Export lists these by name, until every score has its note.
+  const missingNotes = [];
+  CV_ITEMS.forEach((label,i) => {
+    if (p.coreValues.items[i]!=null && !((p.coreValues.itemNotes||[])[i]||'').trim()) missingNotes.push('CHOICES — '+label);
+  });
+  ITP_TRAITS.forEach(t => {
+    if (p.itp[t.key].v!=null && !(p.itp[t.key].note||'').trim()) missingNotes.push('ITP — '+t.label);
+  });
+  [['get','GWC — Get it'],['want','GWC — Want it'],['capacity','GWC — Capacity to do it']].forEach(([key,label]) => {
+    if (p.gwc[key]!=null && !((p.gwc.notes||{})[key]||'').trim()) missingNotes.push(label);
+  });
+
+  const complete = cvComplete && itpComplete && gwcSet && missingNotes.length===0;
   const noteRequired = (composite!=null && composite < 4.0) || wrongSeat || belowBar;
-  return {composite, grade, wrongSeat, belowBar, complete, noteRequired};
+  return {composite, grade, wrongSeat, belowBar, complete, noteRequired, missingNotes};
 }
 
 /* ============ RENDER: PICKER ============ */
 function renderPicker(){
-  const grid = document.getElementById('pickerGrid');
-  grid.innerHTML = '';
+  const container = document.getElementById('pickerGrid');
+  container.innerHTML = '';
+  // Grouped by role tier (Leadership vs Branch Managers, added 7/29) so the picker reads as two
+  // clusters instead of one long undifferentiated list. Order is fixed; any future group not in
+  // GROUP_ORDER falls in after, alphabetically, so nothing silently disappears.
+  const GROUP_ORDER = ['Leadership','Branch Managers'];
+  const groups = {};
   Object.keys(ROSTERS).forEach(key => {
-    const r = ROSTERS[key];
-    const card = document.createElement('div');
-    card.className = 'picker-card';
-    card.innerHTML = '<h3>'+esc(r.name)+'</h3><div class="prole">'+esc(r.role)+'</div>'+
-      '<div class="pcount">'+r.people.length+' direct'+(r.people.length===1?'':'s')+(r.people.length===0?' · start empty':'')+'</div>';
-    card.addEventListener('click', ()=> loadEvaluator(key));
-    grid.appendChild(card);
+    const g = ROSTERS[key].group || 'Leadership';
+    (groups[g] = groups[g] || []).push(key);
+  });
+  const orderedGroupNames = GROUP_ORDER.concat(Object.keys(groups).filter(g=>!GROUP_ORDER.includes(g)).sort());
+  orderedGroupNames.forEach(groupName => {
+    const keys = groups[groupName];
+    if (!keys || !keys.length) return;
+    const heading = document.createElement('div');
+    heading.className = 'picker-group-heading';
+    heading.textContent = groupName;
+    container.appendChild(heading);
+    const grid = document.createElement('div');
+    grid.className = 'picker-grid';
+    keys.forEach(key => {
+      const r = ROSTERS[key];
+      const card = document.createElement('div');
+      card.className = 'picker-card';
+      card.innerHTML = '<h3>'+esc(r.name)+'</h3><div class="prole">'+esc(r.role)+'</div>'+
+        '<div class="pcount">'+r.people.length+' direct'+(r.people.length===1?'':'s')+(r.people.length===0?' · start empty':'')+'</div>';
+      card.addEventListener('click', ()=> loadEvaluator(key));
+      grid.appendChild(card);
+    });
+    container.appendChild(grid);
   });
 }
 
@@ -620,20 +717,35 @@ function buildCoreValuesSection(p, s){
   const sec = document.createElement('div');
   sec.className = 'section';
   let anchorsHtml = '<dl>' + CV_ANCHORS.map(a=>'<dt>'+a[0]+'</dt><dd>'+a[1]+'</dd>').join('') + '</dl>';
+  const anchorLine = CV_ANCHORS.map(a=>'<b>'+a[0]+'</b> '+a[1]).join(' · ');
   sec.innerHTML =
     '<div class="shead"><h3>CHOICES core values <button type="button" class="help-btn" data-pop="cv">?</button></h3></div>'+
-    '<div class="shelp">Score each value 1–5 for this quarter.</div>'+
+    '<div class="shelp">Score each value 1–5 for this quarter. '+anchorLine+'.</div>'+
+    '<div class="shelp">A note is required for every score — <b>including 5s</b>, so we know why they\'re the standard.</div>'+
     '<div class="popover" data-popover="cv" style="display:none"><button class="close-x">✕</button><h4>Scale</h4>'+anchorsHtml+'</div>'+
     CV_ITEMS.map((label, i) => {
       const v = p.coreValues.items[i];
+      const note = (p.coreValues.itemNotes||[])[i] || '';
+      const missing = v!=null && !note.trim();
       const dot = (v!=null && v<=2) ? '<span class="belowbar-dot" title="Below the bar"></span>' : '';
       return '<div class="row"><div class="rowhead"><div><div class="rtitle">'+esc(label)+dot+'</div></div></div>'+
-        '<div class="chiprow" data-cv-idx="'+i+'">'+[1,2,3,4,5].map(n=>chip(n, v===n, chipColor(n))).join('')+'</div></div>';
+        '<div class="chiprow" data-cv-idx="'+i+'">'+[1,2,3,4,5].map(n=>chip(n, v===n, chipColor(n))).join('')+'</div>'+
+        '<textarea class="narrative small-note'+(missing?' note-required':'')+'" data-cv-itemnote="'+i+'" placeholder="Why this score — required, even on a 5.">'+esc(note)+'</textarea>'+
+        (missing?'<div class="reqflag">Note required for this score.</div>':'')+
+        '</div>';
     }).join('') +
-    '<div class="row"><div class="rtitle">Note (optional, for this section)</div>'+
+    '<div class="row"><div class="rtitle">Section note (optional)</div>'+
     '<textarea class="narrative" data-cv-note>'+esc(p.coreValues.note)+'</textarea></div>';
   wireChipRows(sec, sec.querySelectorAll('[data-cv-idx]'), (idx,val)=>{
     p.coreValues.items[idx] = val; scheduleSave(); renderEvaluate();
+  });
+  sec.querySelectorAll('[data-cv-itemnote]').forEach(ta=>{
+    ta.addEventListener('input', e=>{
+      const idx = parseInt(e.target.dataset.cvItemnote,10);
+      p.coreValues.itemNotes[idx] = e.target.value;
+      scheduleSave();
+      e.target.classList.toggle('note-required', p.coreValues.items[idx]!=null && !e.target.value.trim());
+    });
   });
   sec.querySelector('[data-cv-note]').addEventListener('input', e=>{ p.coreValues.note = e.target.value; scheduleSave(); });
   wirePopover(sec);
@@ -644,19 +756,25 @@ function buildItpSection(p){
   const sec = document.createElement('div');
   sec.className = 'section';
   sec.innerHTML = '<div class="shead"><h3>Ideal Team Player</h3></div>'+
-    '<div class="shelp">Humble, Hungry, Smart — 1–5 each, with an optional note.</div>'+
+    '<div class="shelp">Humble, Hungry, Smart — 1–5 each. <b>5</b> consistently, unprompted · <b>3</b> sometimes, with prompting · <b>1</b> rarely.</div>'+
+    '<div class="shelp">A note is required for every score — <b>including 5s</b>.</div>'+
     ITP_TRAITS.map(t => {
       const rec = p.itp[t.key];
+      const missing = rec.v!=null && !(rec.note||'').trim();
       return '<div class="itp-trait"><div class="tname">'+t.label+'</div><div class="tdef">'+t.def+'</div>'+
         '<div class="chiprow" data-itp="'+t.key+'">'+[1,2,3,4,5].map(n=>chip(n, rec.v===n, chipColor(n))).join('')+'</div>'+
-        '<input type="text" class="tnote" data-itp-note="'+t.key+'" placeholder="One-line note (optional)" value="'+escAttr(rec.note)+'">'+
+        '<input type="text" class="tnote'+(missing?' note-required':'')+'" data-itp-note="'+t.key+'" placeholder="Why this score — required, even on a 5." value="'+escAttr(rec.note)+'">'+
+        (missing?'<div class="reqflag">Note required for this score.</div>':'')+
         '</div>';
     }).join('');
   ITP_TRAITS.forEach(t=>{
     wireChipRows(sec, sec.querySelectorAll('[data-itp="'+t.key+'"]'), (_,val)=>{
       p.itp[t.key].v = val; scheduleSave(); renderEvaluate();
     });
-    sec.querySelector('[data-itp-note="'+t.key+'"]').addEventListener('input', e=>{ p.itp[t.key].note = e.target.value; scheduleSave(); });
+    sec.querySelector('[data-itp-note="'+t.key+'"]').addEventListener('input', e=>{
+      p.itp[t.key].note = e.target.value; scheduleSave();
+      e.target.classList.toggle('note-required', p.itp[t.key].v!=null && !e.target.value.trim());
+    });
   });
   return sec;
 }
@@ -666,14 +784,19 @@ function buildGwcSection(p, s){
   sec.className = 'section';
   const items = [['get','Get it'],['want','Want it'],['capacity','Capacity to do it']];
   sec.innerHTML = '<div class="shead"><h3>GWC'+(s.wrongSeat?' <span class="badge wrongseat" style="margin-left:8px">Wrong seat</span>':'')+'</h3></div>'+
-    '<div class="shelp">Any No flags a wrong-seat asterisk on the roster card.</div>'+
+    '<div class="shelp">Any No flags a wrong-seat asterisk on the roster card. A note is required for every answer.</div>'+
     '<div class="gwc-grid">'+items.map(([key,label])=>{
       const v = p.gwc[key];
+      const note = (p.gwc.notes||{})[key] || '';
+      const missing = v!=null && !note.trim();
       return '<div class="gwc-item"><div class="gtitle">'+label+'</div>'+
         '<div class="togglepair" data-gwc="'+key+'">'+
         '<button type="button" class="yes'+(v===true?' sel':'')+'" data-v="true">Yes</button>'+
         '<button type="button" class="no'+(v===false?' sel':'')+'" data-v="false">No</button>'+
-        '</div></div>';
+        '</div>'+
+        '<textarea class="narrative small-note'+(missing?' note-required':'')+'" data-gwc-note="'+key+'" placeholder="Why — required once answered.">'+esc(note)+'</textarea>'+
+        (missing?'<div class="reqflag">Note required.</div>':'')+
+        '</div>';
     }).join('')+'</div>';
   items.forEach(([key])=>{
     const group = sec.querySelector('[data-gwc="'+key+'"]');
@@ -682,6 +805,11 @@ function buildGwcSection(p, s){
         p.gwc[key] = btn.dataset.v === 'true';
         scheduleSave(); renderEvaluate();
       });
+    });
+    const noteEl = sec.querySelector('[data-gwc-note="'+key+'"]');
+    if (noteEl) noteEl.addEventListener('input', e=>{
+      p.gwc.notes[key] = e.target.value; scheduleSave();
+      e.target.classList.toggle('note-required', p.gwc[key]!=null && !e.target.value.trim());
     });
   });
   return sec;
@@ -771,16 +899,25 @@ document.addEventListener('keydown', (e)=>{
 });
 
 /* ============ RENDER: EXPORT ============ */
-function renderExport(){
+// Builds the exact list of missing notes across the roster — per-person, per-item — for both
+// the Export-tab checklist and the export-time confirm dialog. Includes the universal note gate
+// (every scored CHOICES/ITP/GWC item, rule 2) plus the pre-existing overall-note requirement
+// (below-4 composite / wrong-seat / below-bar).
+function collectMissingNotes(){
   const missing = [];
   DATA.people.forEach(p=>{
     const s = computeStats(p);
-    if (s.noteRequired && !p.overallNote.trim()) missing.push(p.name);
+    s.missingNotes.forEach(m=> missing.push(p.name+' — '+m));
+    if (s.noteRequired && !p.overallNote.trim()) missing.push(p.name+' — Overall note');
   });
+  return missing;
+}
+function renderExport(){
+  const missing = collectMissingNotes();
   const box = document.getElementById('exportChecklist');
   if (missing.length){
     box.style.display = 'block';
-    box.innerHTML = '<b>Missing required notes:</b> '+missing.map(esc).join(', ')+'. You can still export — this is a reminder, not a block.';
+    box.innerHTML = '<b>Missing required notes ('+missing.length+'):</b><br>'+missing.map(esc).join('<br>');
   } else {
     box.style.display = 'none';
   }
@@ -796,30 +933,27 @@ function buildExportPayload(){
       const s = computeStats(p);
       return {
         name: p.name, role: p.role || "", branch: p.branch || null, seeded: !!p.seeded,
-        coreValues: { items: p.coreValues.items.slice(), note: p.coreValues.note || "" },
+        coreValues: { items: p.coreValues.items.slice(), itemNotes: (p.coreValues.itemNotes||[]).slice(), note: p.coreValues.note || "" },
         itp: {
           humble: {v:p.itp.humble.v, note:p.itp.humble.note||""},
           hungry: {v:p.itp.hungry.v, note:p.itp.hungry.note||""},
           smart:  {v:p.itp.smart.v,  note:p.itp.smart.note||""}
         },
-        gwc: { get:p.gwc.get, want:p.gwc.want, capacity:p.gwc.capacity },
+        gwc: { get:p.gwc.get, want:p.gwc.want, capacity:p.gwc.capacity, notes: Object.assign({get:"",want:"",capacity:""}, p.gwc.notes) },
         rehire: p.rehire,
         overallNote: p.overallNote || "",
         actionPlan: p.actionPlan || null,
-        composite: s.composite, grade: s.grade, wrongSeat: s.wrongSeat, belowBar: s.belowBar, complete: s.complete
+        composite: s.composite, grade: s.grade, wrongSeat: s.wrongSeat, belowBar: s.belowBar, complete: s.complete,
+        missingNotes: s.missingNotes
       };
     })
   };
 }
 
 document.getElementById('btnExport').addEventListener('click', ()=>{
-  const missing = [];
-  DATA.people.forEach(p=>{
-    const s = computeStats(p);
-    if (s.noteRequired && !p.overallNote.trim()) missing.push(p.name);
-  });
+  const missing = collectMissingNotes();
   if (missing.length){
-    const proceed = confirm('Missing required notes for: '+missing.join(', ')+'.\n\nExport anyway?');
+    const proceed = confirm('Missing required notes (including any 5s — why they\'re the standard):\n\n'+missing.join('\n')+'\n\nExport anyway?');
     if (!proceed) return;
   }
   const payload = buildExportPayload();
@@ -851,9 +985,11 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
         const existing = DATA.people.find(p=>p.name === imp.name);
         const rec = freshPerson({name:imp.name, role:imp.role, branch:imp.branch, seeded:imp.seeded});
         rec.coreValues.items = imp.coreValues.items.slice();
+        rec.coreValues.itemNotes = (imp.coreValues.itemNotes || new Array(CV_ITEMS.length).fill("")).slice();
         rec.coreValues.note = imp.coreValues.note || "";
         ['humble','hungry','smart'].forEach(k=>{ rec.itp[k] = {v: imp.itp[k].v, note: imp.itp[k].note||""}; });
-        rec.gwc = Object.assign({get:null,want:null,capacity:null}, imp.gwc);
+        rec.gwc = Object.assign({get:null,want:null,capacity:null,notes:{get:"",want:"",capacity:""}}, imp.gwc);
+        if (!rec.gwc.notes) rec.gwc.notes = {get:"",want:"",capacity:""};
         rec.rehire = imp.rehire;
         rec.overallNote = imp.overallNote || "";
         rec.actionPlan = imp.actionPlan || null;
