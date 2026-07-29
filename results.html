@@ -221,6 +221,47 @@ function roomEntry(evaluatorKey, personName){
 }
 const VERDICT_LABEL = {confirmed:'Confirmed', challenged:'Challenged', needsplan:'Needs action plan'};
 
+/* Room-read score edits — PILOT: Landon Vaughan only (Cameron 7/28: test on one card,
+   then decide whether it rolls to everyone). Add keys here to widen the pilot. */
+const SCORE_EDIT_PILOT = ['mike::Landon Vaughan'];
+function scoreEditsFor(evaluatorKey, personName){
+  return (ROOM[roomKeyFor(evaluatorKey, personName)] || {}).scoreEdits || {};
+}
+
+/* Split a leader's core-values note into per-value lines using CHOICES letter prefixes
+   ("C - ...", "O: ..." etc). Letters map to the FIRST matching value in CHOICES order
+   (the second C — Conscientious — can't be told apart from Communicate by letter alone).
+   Unparsed lines stay in the general note box. */
+const LETTER_TO_CV = {};
+CV_ITEMS.forEach((label,i)=>{ const L=label[0].toUpperCase(); if(!(L in LETTER_TO_CV)) LETTER_TO_CV[L]=i; });
+function splitCvNote(note){
+  const perValue = {}; const rest = [];
+  (note||'').split(/\n+/).forEach(line=>{
+    const m = line.match(/^\s*([A-Za-z])\s*[-–—:]\s+(.+)$/);
+    const idx = m ? LETTER_TO_CV[m[1].toUpperCase()] : undefined;
+    if (m && idx !== undefined){ (perValue[idx] = perValue[idx] || []).push(m[2].trim()); }
+    else if (line.trim()) rest.push(line.trim());
+  });
+  return {perValue, rest: rest.join('\n')};
+}
+
+/* Room composite = leader's scores with any room edits applied (cv:<i> and itp:<key>). */
+function roomComposite(person, edits){
+  const vals = [];
+  (person.coreValues && person.coreValues.items || []).forEach((v,i)=>{
+    const e = edits['cv:'+i];
+    const use = (e!=null) ? e : v;
+    if (use!=null) vals.push(use);
+  });
+  ['humble','hungry','smart'].forEach(k=>{
+    const orig = person.itp && person.itp[k] && person.itp[k].v;
+    const e = edits['itp:'+k];
+    const use = (e!=null) ? e : orig;
+    if (use!=null) vals.push(use);
+  });
+  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+}
+
 function load(){
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw){
@@ -528,13 +569,31 @@ function openModal(row){
   const p = row.person;
   const overlay = document.getElementById('modalOverlay');
   const body = document.getElementById('modalBody');
+  const rk = roomKeyFor(row.evaluatorKey, row.name);
+  const editable = SCORE_EDIT_PILOT.indexOf(rk) >= 0;
+  const noteSplit = splitCvNote(p.coreValues && p.coreValues.note);
+
+  function scoreCell(field, orig){
+    const edits = scoreEditsFor(row.evaluatorKey, row.name);
+    const e = edits[field];
+    if (!editable) return '<td>'+(orig==null?'—':orig)+'</td>';
+    const shown = (e!=null)
+      ? '<s style="color:var(--grey-400);font-weight:400">'+(orig==null?'—':orig)+'</s> <b style="color:var(--orange-700)">'+e+'</b>'
+      : (orig==null?'—':orig);
+    return '<td class="score-edit" data-field="'+field+'" data-orig="'+(orig==null?'':orig)+'" title="Room read — click to adjust (cycles 1–5, back to leader\'s score)" style="cursor:pointer">'+shown+' <span style="color:var(--grey-200)">✎</span></td>';
+  }
+
   let rowsHtml = '';
   (p.coreValues && p.coreValues.items || []).forEach((v,i)=>{
-    rowsHtml += '<tr><td>'+esc(CV_ITEMS[i])+'</td><td>'+(v==null?'—':v)+'</td></tr>';
+    rowsHtml += '<tr><td>'+esc(CV_ITEMS[i])+'</td>'+scoreCell('cv:'+i, v)+'</tr>';
+    (noteSplit.perValue[i]||[]).forEach(n=>{
+      rowsHtml += '<tr><td colspan="2" style="padding:2px 4px 8px 18px;color:var(--grey-500);font-weight:400;font-size:12px;border-top:none">↳ '+esc(n)+'</td></tr>';
+    });
   });
   ['humble','hungry','smart'].forEach(k=>{
     const rec = p.itp && p.itp[k];
-    rowsHtml += '<tr><td>ITP — '+k+'</td><td>'+(rec && rec.v!=null ? rec.v : '—')+'</td></tr>';
+    rowsHtml += '<tr><td>ITP — '+k+'</td>'+scoreCell('itp:'+k, rec && rec.v!=null ? rec.v : null)+'</tr>';
+    if (rec && rec.note) rowsHtml += '<tr><td colspan="2" style="padding:2px 4px 8px 18px;color:var(--grey-500);font-weight:400;font-size:12px;border-top:none">↳ '+esc(rec.note)+'</td></tr>';
   });
   const gwc = p.gwc || {};
   rowsHtml += '<tr><td>GWC — Get it</td><td>'+fmtBool(gwc.get)+'</td></tr>';
@@ -542,12 +601,22 @@ function openModal(row){
   rowsHtml += '<tr><td>GWC — Capacity</td><td>'+fmtBool(gwc.capacity)+'</td></tr>';
   rowsHtml += '<tr><td>Enthusiastically rehire?</td><td>'+fmtBool(p.rehire)+'</td></tr>';
 
+  function compChipHtml(){
+    if (!editable) return '';
+    const edits = scoreEditsFor(row.evaluatorKey, row.name);
+    if (!Object.keys(edits).length) return '';
+    const rc = roomComposite(p, edits);
+    const orig = row.composite!=null ? Number(row.composite).toFixed(2) : '—';
+    return '<div id="roomCompChip" style="background:var(--orange-50);border:1px solid var(--orange-200);border-radius:var(--radius-sm);padding:8px 12px;font-size:12.5px;margin-bottom:10px"><b>Room read: '+(rc==null?'—':rc.toFixed(2))+'</b> <span style="color:var(--grey-500)">(leader\'s composite '+orig+' — original stays in '+esc(row.leader.split(' ')[0])+'\'s file, this rides the room export)</span></div>';
+  }
+
   body.innerHTML =
     '<button class="close-x" id="modalClose">✕</button>'+
     '<h2>'+esc(p.name)+'</h2>'+
-    '<div class="subrole">'+esc(p.role||'')+(p.branch?' · '+esc(p.branch):'')+' — evaluated by '+esc(row.leader)+'</div>'+
-    '<table>'+rowsHtml+'</table>'+
-    (p.coreValues && p.coreValues.note ? '<h4>Core values note</h4><div class="notebox">'+esc(p.coreValues.note)+'</div>' : '')+
+    '<div class="subrole">'+esc(p.role||'')+(p.branch?' · '+esc(p.branch):'')+' — evaluated by '+esc(row.leader)+(editable?' · <b style="color:var(--orange-700)">ROOM-EDIT PILOT</b>':'')+'</div>'+
+    '<div id="compChipSlot">'+compChipHtml()+'</div>'+
+    '<table id="scoreTable">'+rowsHtml+'</table>'+
+    (noteSplit.rest ? '<h4>Core values note (general)</h4><div class="notebox">'+esc(noteSplit.rest)+'</div>' : '')+
     (p.overallNote ? '<h4>Overall note</h4><div class="notebox">'+esc(p.overallNote)+'</div>' : '')+
     (p.actionPlan ? '<h4>Action plan</h4><div class="notebox">'+esc(p.actionPlan)+'</div>' : '')+
     '<div class="audit-block">'+
@@ -562,8 +631,34 @@ function openModal(row){
     '</div>'+
     '<div class="tiny" style="color:var(--grey-400);margin-top:10px">From '+esc(row.fileName)+'</div>';
 
+  // Wire the room-read score edits (pilot cards only)
+  if (editable){
+    body.querySelectorAll('td.score-edit').forEach(td=>{
+      td.addEventListener('click', ()=>{
+        const field = td.dataset.field;
+        const orig = td.dataset.orig === '' ? null : Number(td.dataset.orig);
+        const cur = ROOM[rk] || {verdict:null, note:''};
+        const edits = cur.scoreEdits || {};
+        const now = edits[field];
+        // cycle: leader's score → 1 → 2 → 3 → 4 → 5 → back to leader's score
+        let next;
+        if (now == null) next = 1;
+        else if (now >= 5) next = null;
+        else next = now + 1;
+        if (next === orig) next = (next >= 5) ? null : next + 1; // skip landing on the original as an "edit"
+        if (next == null) delete edits[field]; else edits[field] = next;
+        cur.scoreEdits = edits; ROOM[rk] = cur; persistRoom();
+        // re-render cell + composite chip in place
+        const e = edits[field];
+        td.innerHTML = ((e!=null)
+          ? '<s style="color:var(--grey-400);font-weight:400">'+(orig==null?'—':orig)+'</s> <b style="color:var(--orange-700)">'+e+'</b>'
+          : (orig==null?'—':orig)) + ' <span style="color:var(--grey-200)">✎</span>';
+        document.getElementById('compChipSlot').innerHTML = compChipHtml();
+      });
+    });
+  }
+
   // Wire the room-audit controls
-  const rk = roomKeyFor(row.evaluatorKey, row.name);
   function syncBtns(){
     const cur = (ROOM[rk] || {}).verdict || null;
     body.querySelectorAll('#verdictBtns button').forEach(btn=>{
@@ -610,8 +705,23 @@ document.getElementById('btnExportNotes').addEventListener('click', ()=>{
   const notes = [];
   rows.forEach(r=>{
     const e = roomEntry(r.evaluatorKey, r.name);
-    if (e.verdict || (e.note && e.note.trim())){
-      notes.push({evaluatorKey:r.evaluatorKey, leader:r.leader, person:r.name, role:r.person.role||null, grade:r.grade, verdict:e.verdict||null, note:(e.note||'').trim()||null});
+    const edits = e.scoreEdits || {};
+    const hasEdits = Object.keys(edits).length > 0;
+    if (e.verdict || (e.note && e.note.trim()) || hasEdits){
+      const entry = {evaluatorKey:r.evaluatorKey, leader:r.leader, person:r.name, role:r.person.role||null, grade:r.grade, verdict:e.verdict||null, note:(e.note||'').trim()||null};
+      if (hasEdits){
+        entry.scoreEdits = {};
+        Object.keys(edits).forEach(f=>{
+          let label = f, orig = null;
+          if (f.indexOf('cv:')===0){ const i=Number(f.slice(3)); label = CV_ITEMS[i]; orig = (r.person.coreValues&&r.person.coreValues.items||[])[i]; }
+          else if (f.indexOf('itp:')===0){ const k=f.slice(4); label = 'ITP — '+k; orig = r.person.itp && r.person.itp[k] && r.person.itp[k].v; }
+          entry.scoreEdits[label] = {leaderScore: orig==null?null:orig, roomScore: edits[f]};
+        });
+        entry.leaderComposite = r.composite!=null ? Number(Number(r.composite).toFixed(2)) : null;
+        const rc = roomComposite(r.person, edits);
+        entry.roomComposite = rc==null?null:Number(rc.toFixed(2));
+      }
+      notes.push(entry);
     }
   });
   if (!notes.length){ showToast('No verdicts or notes yet — nothing to export.'); return; }
@@ -625,6 +735,10 @@ document.getElementById('btnExportNotes').addEventListener('click', ()=>{
     md += '\n### '+n.person+(n.role?' — '+n.role:'')+' (grade '+(n.grade||'—')+')\n';
     md += '- Room verdict: '+(n.verdict?VERDICT_LABEL[n.verdict]:'—')+'\n';
     if (n.note) md += '- Note: '+n.note+'\n';
+    if (n.scoreEdits){
+      md += '- Room score reads (leader → room): ' + Object.keys(n.scoreEdits).map(k=>k+' '+ (n.scoreEdits[k].leaderScore==null?'—':n.scoreEdits[k].leaderScore) +'→'+n.scoreEdits[k].roomScore).join(' · ') + '\n';
+      md += '- Composite: leader '+(n.leaderComposite==null?'—':n.leaderComposite)+' → room '+(n.roomComposite==null?'—':n.roomComposite)+'\n';
+    }
   });
   dl('pa-room-notes-q3-'+stamp+'.md', md, 'text/markdown');
   showToast('Exported '+notes.length+' note(s) — JSON + markdown.');
