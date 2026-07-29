@@ -316,44 +316,7 @@ const ROSTERS = {
   ]},
   paul: { name:"Paul Morin", role:"CFO/COO", group:"Leadership", people:[
     {name:"Ben Young (Prosper)", role:"VCFO — Prosper", branch:null}
-  ], helper:"Add anyone else you directly manage. (Other vendor/controller evals live in the leadership-tier tool.)" },
-
-  // ===== Branch Manager evaluators (added 7/29 — Cameron's QGR Day-1 ruling: each BM evaluates
-  // their own ops/field/flex managers). Rosters seeded verbatim from the Brian/Mike rosters above
-  // (same people, this time under their direct BM instead of the regional manager). =====
-  chris_anderson: { name:"Chris Anderson", role:"BM, South Austin", group:"Branch Managers", people:[
-    {name:"Hector Zavala", role:"Manager", branch:"South Austin"},
-    {name:"Jespah Lara", role:"Flex Manager", branch:"South Austin"}
-  ]},
-  daniel_behseresht: { name:"Daniel Behseresht", role:"BM, North Austin (incoming)", group:"Branch Managers", people:[
-    {name:"Nick Dagel", role:"Ops Manager", branch:"North Austin"},
-    {name:"Rance Pope", role:"Manager", branch:"North Austin"}
-  ]},
-  frank_williams: { name:"Frank Williams", role:"BM, Leander", group:"Branch Managers", people:[
-    {name:"Garrison Cobe", role:"Manager", branch:"Leander"}
-  ]},
-  dustin_street: { name:"Dustin Street", role:"BM, San Antonio", group:"Branch Managers", people:[
-    {name:"Lukas Konrad", role:"Operations Manager", branch:"San Antonio"},
-    {name:"Cameron Klepac", role:"Manager", branch:"San Antonio"}
-  ]},
-  sergio_buenrostro: { name:"Sergio Buenrostro", role:"BM, Houston", group:"Branch Managers", people:[
-    {name:"Joel Villatoro", role:"Manager", branch:"Houston"},
-    {name:"Alex Tran", role:"Manager", branch:"Houston"}
-  ]},
-  chris_beattie: { name:"Chris Beattie", role:"BM, Dallas", group:"Branch Managers", people:[
-    {name:"Landon Vaughan", role:"Manager", branch:"Dallas"},
-    {name:"Tabi Enoh", role:"Manager", branch:"Dallas"}
-  ]},
-  grant_hardison: { name:"Grant Hardison", role:"BM, Fort Worth", group:"Branch Managers", people:[
-    {name:"Erik Orama", role:"Manager", branch:"Fort Worth"}
-  ]},
-  khevan_dueck: { name:"Khevan Dueck", role:"BM, McKinney", group:"Branch Managers", people:[
-    {name:"Zachary Krodel", role:"Manager", branch:"McKinney"}
-  ]},
-  jack_davis: { name:"Jack Davis", role:"BM, Garland", group:"Branch Managers", people:[], helper:"No seeded reports yet — add your team below." },
-  steven_anderson: { name:"Steven Anderson", role:"BM, Tampa", group:"Branch Managers", people:[
-    {name:"Shane Heaberlin", role:"Operations Manager", branch:"Tampa"}
-  ]}
+  ], helper:"Add anyone else you directly manage. (Other vendor/controller evals live in the leadership-tier tool.)" }
 };
 
 const CV_ITEMS = [
@@ -531,13 +494,16 @@ function renderPicker(){
     (groups[g] = groups[g] || []).push(key);
   });
   const orderedGroupNames = GROUP_ORDER.concat(Object.keys(groups).filter(g=>!GROUP_ORDER.includes(g)).sort());
+  const multiGroup = orderedGroupNames.filter(g => groups[g] && groups[g].length).length > 1;
   orderedGroupNames.forEach(groupName => {
     const keys = groups[groupName];
     if (!keys || !keys.length) return;
-    const heading = document.createElement('div');
-    heading.className = 'picker-group-heading';
-    heading.textContent = groupName;
-    container.appendChild(heading);
+    if (multiGroup){
+      const heading = document.createElement('div');
+      heading.className = 'picker-group-heading';
+      heading.textContent = groupName;
+      container.appendChild(heading);
+    }
     const grid = document.createElement('div');
     grid.className = 'picker-grid';
     keys.forEach(key => {
