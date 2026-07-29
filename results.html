@@ -68,6 +68,20 @@ main{max-width:1300px;margin:0 auto;padding:28px 28px 90px}
 .leader-card .legend{display:flex;gap:10px;font-size:10.5px;color:var(--grey-400)}
 .leader-card .comp{font-size:11px;color:var(--grey-400);margin-top:6px}
 .leader-card.pending{opacity:.55;border-style:dashed}
+.leader-card:not(.pending){cursor:pointer;transition:.12s}
+.leader-card:not(.pending):hover{box-shadow:var(--shadow-md)}
+.leader-card.selected{border-color:var(--orange-500);box-shadow:0 0 0 2px var(--orange-100)}
+.leader-card .filterhint{font-size:10px;color:var(--grey-200);margin-top:6px}
+.leader-card.selected .filterhint{color:var(--orange-700)}
+
+/* ---- Leader filter pills + pager ---- */
+.filter-pills{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.filter-pills button{border:1px solid var(--grey-100);background:#fff;border-radius:var(--radius-pill);padding:6px 14px;font-size:12px;font-weight:700;color:var(--grey-500)}
+.filter-pills button:hover{border-color:var(--grey-200)}
+.filter-pills button.on{background:var(--navy-500);border-color:var(--navy-500);color:#fff}
+.pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:10px;font-size:12px;color:var(--grey-500)}
+.pager button{border:1px solid var(--grey-100);background:#fff;border-radius:var(--radius-sm);padding:5px 12px;font-size:12px;font-weight:700;color:var(--grey-700)}
+.pager button:disabled{opacity:.4;cursor:default}
 
 /* ---- Watch list ---- */
 .watch-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--grey-100);border-radius:var(--radius-md);overflow:hidden;font-size:12.5px}
@@ -176,8 +190,10 @@ footer{background:var(--navy-700);color:var(--navy-100);text-align:center;paddin
     <div style="overflow-x:auto"><table class="watch-table" id="watchTable"></table></div>
 
     <div class="section-title">Room audit — every person</div>
-    <div class="audit-hint">Click a row to open the full eval, tag a room verdict, and type notes live. Verdicts + notes live in THIS browser only (separate from the dropped files — late files just add rows) until you export them back to Albert.</div>
+    <div class="audit-hint">Click a leader card above (or a pill below) to scope the watch list + audit to just their directs — that's the room flow, leader by leader. Click a row to open the full eval, tag a room verdict, and type notes live. Verdicts + notes live in THIS browser only until you export them back to Albert.</div>
+    <div class="filter-pills" id="leaderFilterPills"></div>
     <div style="overflow-x:auto"><table class="watch-table" id="auditTable"></table></div>
+    <div class="pager" id="auditPager"></div>
 
     <div class="section-title">Weakest values (company average, lowest first)</div>
     <div class="value-bars" id="valueBars"></div>
@@ -215,6 +231,17 @@ const CV_ITEMS = [
 
 let FILES = []; // [{fileName, payload}]
 let watchSort = {col:'name', dir:1};
+let leaderFilter = null;   // evaluator key, or null = all leaders
+let auditPage = 0;
+const AUDIT_PAGE_SIZE = 25;
+function setLeaderFilter(key){
+  leaderFilter = (leaderFilter === key) ? null : key; // click again to clear
+  auditPage = 0;
+  renderLeaderGrid(); renderFilterPills(); renderWatchTable(); renderAuditTable();
+}
+function filteredByLeader(rows){
+  return leaderFilter ? rows.filter(r=>r.evaluatorKey===leaderFilter) : rows;
+}
 
 /* Room-audit layer: verdicts + live notes, stored SEPARATELY from the dropped files
    so re-drops / late files never touch them. Keyed by evaluatorKey::personName. */
@@ -392,15 +419,39 @@ function render(){
   document.getElementById('emptyState').style.display = hasData ? 'none' : 'block';
   if (!hasData) return;
 
+  // drop a stale filter if that leader's file was cleared/replaced
+  if (leaderFilter && !FILES.some(f=>f.payload.evaluator.key===leaderFilter)) leaderFilter = null;
   renderCompanyStrip();
   renderLeaderGrid();
+  renderFilterPills();
   renderWatchTable();
   renderAuditTable();
   renderValueBars();
 }
 
+function renderFilterPills(){
+  const box = document.getElementById('leaderFilterPills');
+  const all = collectAllRowsUnfiltered();
+  let html = '<button data-lf="" class="'+(leaderFilter?'':'on')+'">All ('+all.length+')</button>';
+  FILES.forEach(f=>{
+    const k = f.payload.evaluator.key;
+    const n = f.payload.people.length;
+    const first = (f.payload.evaluator.name||k).split(' ')[0];
+    html += '<button data-lf="'+esc(k)+'" class="'+(leaderFilter===k?'on':'')+'">'+esc(first)+' ('+n+')</button>';
+  });
+  box.innerHTML = html;
+  box.querySelectorAll('button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const k = b.dataset.lf;
+      if (!k){ if (leaderFilter) setLeaderFilter(leaderFilter); } // "All" clears
+      else setLeaderFilter(k===leaderFilter ? k : k);
+    });
+  });
+}
+
 /* ---- Room audit table (every person) ---- */
-function collectAllRows(){
+function collectAllRows(){ return filteredByLeader(collectAllRowsUnfiltered()); }
+function collectAllRowsUnfiltered(){
   const rows = [];
   FILES.forEach(f=>{
     f.payload.people.forEach(person=>{
@@ -421,12 +472,17 @@ function collectAllRows(){
 }
 
 function renderAuditTable(){
-  const rows = collectAllRows();
+  const allRows = collectAllRows();
   const table = document.getElementById('auditTable');
-  if (!rows.length){
+  const pager = document.getElementById('auditPager');
+  if (!allRows.length){
     table.innerHTML = '<tr><td style="padding:16px;color:var(--grey-400)">Nothing loaded yet.</td></tr>';
+    pager.innerHTML = '';
     return;
   }
+  const pages = Math.ceil(allRows.length / AUDIT_PAGE_SIZE);
+  if (auditPage >= pages) auditPage = pages - 1;
+  const rows = allRows.slice(auditPage*AUDIT_PAGE_SIZE, (auditPage+1)*AUDIT_PAGE_SIZE);
   let html = '<thead><tr><th>Person</th><th>Leader</th><th>Grade</th><th>Composite</th><th>Room verdict</th><th>Room note</th></tr></thead><tbody>';
   rows.forEach((r,i)=>{
     const e = roomEntry(r.evaluatorKey, r.name);
@@ -443,6 +499,17 @@ function renderAuditTable(){
   table.querySelectorAll('tbody tr').forEach((tr,i)=>{
     tr.addEventListener('click', ()=> openModal(rows[i]));
   });
+  if (pages > 1){
+    pager.innerHTML =
+      '<span>'+(auditPage*AUDIT_PAGE_SIZE+1)+'–'+Math.min((auditPage+1)*AUDIT_PAGE_SIZE, allRows.length)+' of '+allRows.length+'</span>'+
+      '<button id="pgPrev"'+(auditPage===0?' disabled':'')+'>‹ Prev</button>'+
+      '<button id="pgNext"'+(auditPage>=pages-1?' disabled':'')+'>Next ›</button>';
+    const prev = document.getElementById('pgPrev'), next = document.getElementById('pgNext');
+    if (prev) prev.addEventListener('click', ()=>{ if(auditPage>0){ auditPage--; renderAuditTable(); } });
+    if (next) next.addEventListener('click', ()=>{ if(auditPage<pages-1){ auditPage++; renderAuditTable(); } });
+  } else {
+    pager.innerHTML = '';
+  }
 }
 
 function renderCompanyStrip(){
@@ -498,12 +565,14 @@ function renderLeaderGrid(){
     let a=0,b=0,c=0,complete=0;
     people.forEach(p=>{ if(p.grade==='A')a++; else if(p.grade==='B')b++; else if(p.grade==='C')c++; if(p.complete)complete++; });
     const n = people.length || 1;
-    card.className = 'leader-card';
+    card.className = 'leader-card' + (leaderFilter===key ? ' selected' : '');
     card.innerHTML = '<h3>'+esc(file.payload.evaluator.name)+'</h3>'+
       '<div class="n">'+people.length+' people · '+complete+'/'+people.length+' complete</div>'+
       '<div class="mini-bars"><span class="a" style="width:'+(a/n*100)+'%"></span><span class="b" style="width:'+(b/n*100)+'%"></span><span class="c" style="width:'+(c/n*100)+'%"></span></div>'+
       '<div class="legend"><span>A '+a+'</span><span>B '+b+'</span><span>C '+c+'</span></div>'+
-      '<div class="comp">'+esc(file.fileName)+'</div>';
+      '<div class="comp">'+esc(file.fileName)+'</div>'+
+      '<div class="filterhint">'+(leaderFilter===key ? '● showing only this leader — click to clear' : 'click to scope the lists to this leader')+'</div>';
+    card.addEventListener('click', ()=> setLeaderFilter(key));
     grid.appendChild(card);
   });
 }
@@ -530,7 +599,7 @@ function collectWatchRows(){
 }
 
 function renderWatchTable(){
-  const rows = collectWatchRows();
+  const rows = filteredByLeader(collectWatchRows());
   const table = document.getElementById('watchTable');
   if (!rows.length){
     table.innerHTML = '<tr><td style="padding:16px;color:var(--grey-400)">No watch-list items loaded yet.</td></tr>';
@@ -743,7 +812,7 @@ function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&am
 
 /* ---- Export room notes (JSON + markdown) ---- */
 document.getElementById('btnExportNotes').addEventListener('click', ()=>{
-  const rows = collectAllRows();
+  const rows = collectAllRowsUnfiltered(); // export ALWAYS covers everyone, whatever the view filter
   const notes = [];
   rows.forEach(r=>{
     const e = roomEntry(r.evaluatorKey, r.name);
