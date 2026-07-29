@@ -221,26 +221,36 @@ function roomEntry(evaluatorKey, personName){
 }
 const VERDICT_LABEL = {confirmed:'Confirmed', challenged:'Challenged', needsplan:'Needs action plan'};
 
-/* Room-read score edits — PILOT: Landon Vaughan only (Cameron 7/28: test on one card,
-   then decide whether it rolls to everyone). Add keys here to widen the pilot. */
-const SCORE_EDIT_PILOT = ['mike::Landon Vaughan'];
+/* Room-read score edits — rolled out to EVERY card (Cameron 7/28 late, after the
+   Landon Vaughan pilot: "I agree, let's roll it out to everyone"). */
+const SCORE_EDITS_ENABLED = true;
 function scoreEditsFor(evaluatorKey, personName){
   return (ROOM[roomKeyFor(evaluatorKey, personName)] || {}).scoreEdits || {};
 }
 
 /* Split a leader's core-values note into per-value lines using CHOICES letter prefixes
-   ("C - ...", "O: ..." etc). Letters map to the FIRST matching value in CHOICES order
-   (the second C — Conscientious — can't be told apart from Communicate by letter alone).
+   ("C - ...", "O: ..." etc). Repeated letters distribute in CHOICES order — the acronym
+   itself is the disambiguator: the FIRST "C -" line is Communicate, the SECOND is
+   Conscientious attention to detail (Cameron caught both of Landon's C-notes stacking
+   under Communicate). Extra lines beyond a letter's values stick to its last value.
    Unparsed lines stay in the general note box. */
-const LETTER_TO_CV = {};
-CV_ITEMS.forEach((label,i)=>{ const L=label[0].toUpperCase(); if(!(L in LETTER_TO_CV)) LETTER_TO_CV[L]=i; });
+const LETTER_TO_CVS = {};
+CV_ITEMS.forEach((label,i)=>{ const L=label[0].toUpperCase(); (LETTER_TO_CVS[L] = LETTER_TO_CVS[L] || []).push(i); });
 function splitCvNote(note){
-  const perValue = {}; const rest = [];
+  const perValue = {}; const rest = []; const used = {};
   (note||'').split(/\n+/).forEach(line=>{
     const m = line.match(/^\s*([A-Za-z])\s*[-–—:]\s+(.+)$/);
-    const idx = m ? LETTER_TO_CV[m[1].toUpperCase()] : undefined;
-    if (m && idx !== undefined){ (perValue[idx] = perValue[idx] || []).push(m[2].trim()); }
-    else if (line.trim()) rest.push(line.trim());
+    if (m){
+      const L = m[1].toUpperCase(), list = LETTER_TO_CVS[L];
+      if (list){
+        const n = used[L] || 0;
+        const idx = list[Math.min(n, list.length-1)];
+        used[L] = n + 1;
+        (perValue[idx] = perValue[idx] || []).push(m[2].trim());
+        return;
+      }
+    }
+    if (line.trim()) rest.push(line.trim());
   });
   return {perValue, rest: rest.join('\n')};
 }
@@ -570,7 +580,7 @@ function openModal(row){
   const overlay = document.getElementById('modalOverlay');
   const body = document.getElementById('modalBody');
   const rk = roomKeyFor(row.evaluatorKey, row.name);
-  const editable = SCORE_EDIT_PILOT.indexOf(rk) >= 0;
+  const editable = SCORE_EDITS_ENABLED;
   const noteSplit = splitCvNote(p.coreValues && p.coreValues.note);
 
   function scoreCell(field, orig){
@@ -613,7 +623,7 @@ function openModal(row){
   body.innerHTML =
     '<button class="close-x" id="modalClose">✕</button>'+
     '<h2>'+esc(p.name)+'</h2>'+
-    '<div class="subrole">'+esc(p.role||'')+(p.branch?' · '+esc(p.branch):'')+' — evaluated by '+esc(row.leader)+(editable?' · <b style="color:var(--orange-700)">ROOM-EDIT PILOT</b>':'')+'</div>'+
+    '<div class="subrole">'+esc(p.role||'')+(p.branch?' · '+esc(p.branch):'')+' — evaluated by '+esc(row.leader)+(editable?' · <span style="color:var(--orange-700)">✎ scores are room-editable</span>':'')+'</div>'+
     '<div id="compChipSlot">'+compChipHtml()+'</div>'+
     '<table id="scoreTable">'+rowsHtml+'</table>'+
     (noteSplit.rest ? '<h4>Core values note (general)</h4><div class="notebox">'+esc(noteSplit.rest)+'</div>' : '')+
