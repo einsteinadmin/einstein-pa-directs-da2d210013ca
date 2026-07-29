@@ -159,6 +159,15 @@ footer{background:var(--navy-700);color:var(--navy-100);text-align:center;paddin
 
   <div id="rollup" style="display:none">
     <div class="summary-strip" id="companyStrip"></div>
+    <details style="margin:-10px 0 20px; font-size:12.5px; color:var(--grey-500)">
+      <summary style="cursor:pointer; color:var(--blue-500); font-weight:700">ⓘ How grades are computed</summary>
+      <div style="background:#fff; border:1px solid var(--grey-100); border-radius:var(--radius-md); padding:12px 16px; margin-top:8px; line-height:1.6">
+        <b>Composite</b> = the straight average of all 10 scored items — the 7 CHOICES values <i>and</i> the 3 Ideal Team Player virtues (Humble / Hungry / Smart), equal weight, each 1–5. Nothing else moves the number.<br>
+        <b>Grade bands:</b> A ≥ 4.5 · B ≥ 4.0 · C &lt; 4.0.<br>
+        <b>Flags (don't affect the number):</b> any GWC "No" → <span class="badge wrongseat">Wrong seat</span> · any single value ≤ 2 → <span class="badge belowbar">Below bar</span> · rehire "No" → <span class="badge rehireno">Rehire No</span>. A C grade (or any flag) puts the person on the watch list; C's are expected to carry an action plan.<br>
+        <b>Room edits</b> (click a score in any card) never change the leader's file — they compute a separate "room read" composite that rides the room-notes export.
+      </div>
+    </details>
 
     <div class="section-title">Per leader</div>
     <div class="leader-grid" id="leaderGrid"></div>
@@ -254,6 +263,24 @@ function splitCvNote(note){
   });
   return {perValue, rest: rest.join('\n')};
 }
+
+/* Sub-averages (CHOICES-only and ITP-only), with any room edits applied. */
+function cvAvg(person, edits){
+  const vals=[];
+  (person.coreValues && person.coreValues.items || []).forEach((v,i)=>{
+    const e=(edits||{})['cv:'+i]; const use=(e!=null)?e:v; if(use!=null) vals.push(use);
+  });
+  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+}
+function itpAvg(person, edits){
+  const vals=[];
+  ['humble','hungry','smart'].forEach(k=>{
+    const orig=person.itp && person.itp[k] && person.itp[k].v;
+    const e=(edits||{})['itp:'+k]; const use=(e!=null)?e:orig; if(use!=null) vals.push(use);
+  });
+  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+}
+function fmtAvg(n){ return n==null ? '—' : n.toFixed(2); }
 
 /* Room composite = leader's scores with any room edits applied (cv:<i> and itp:<key>). */
 function roomComposite(person, edits){
@@ -611,14 +638,19 @@ function openModal(row){
   rowsHtml += '<tr><td>GWC — Capacity</td><td>'+fmtBool(gwc.capacity)+'</td></tr>';
   rowsHtml += '<tr><td>Enthusiastically rehire?</td><td>'+fmtBool(p.rehire)+'</td></tr>';
 
-  function compChipHtml(){
-    if (!editable) return '';
-    const edits = scoreEditsFor(row.evaluatorKey, row.name);
-    if (!Object.keys(edits).length) return '';
-    const rc = roomComposite(p, edits);
-    const orig = row.composite!=null ? Number(row.composite).toFixed(2) : '—';
-    return '<div id="roomCompChip" style="background:var(--orange-50);border:1px solid var(--orange-200);border-radius:var(--radius-sm);padding:8px 12px;font-size:12.5px;margin-bottom:10px"><b>Room read: '+(rc==null?'—':rc.toFixed(2))+'</b> <span style="color:var(--grey-500)">(leader\'s composite '+orig+' — original stays in '+esc(row.leader.split(' ')[0])+'\'s file, this rides the room export)</span></div>';
+  function avgLineHtml(){
+    const edits = editable ? scoreEditsFor(row.evaluatorKey, row.name) : {};
+    const hasEdits = Object.keys(edits).length > 0;
+    let html = '<div id="avgLine" style="background:var(--grey-50);border-radius:var(--radius-sm);padding:8px 12px;font-size:12.5px;margin-bottom:10px;color:var(--grey-700)">'+
+      '<b>CHOICES avg '+fmtAvg(cvAvg(p))+'</b> · <b>ITP avg '+fmtAvg(itpAvg(p))+'</b> → composite '+(row.composite!=null?Number(row.composite).toFixed(2):'—')+' = grade '+(row.grade||'—')+
+      ' <span style="color:var(--grey-400)">(straight average of all 10 items — see ⓘ under the summary strip)</span></div>';
+    if (hasEdits){
+      const rc = roomComposite(p, edits);
+      html += '<div id="roomCompChip" style="background:var(--orange-50);border:1px solid var(--orange-200);border-radius:var(--radius-sm);padding:8px 12px;font-size:12.5px;margin-bottom:10px"><b>Room read: composite '+(rc==null?'—':rc.toFixed(2))+'</b> · CHOICES '+fmtAvg(cvAvg(p,edits))+' · ITP '+fmtAvg(itpAvg(p,edits))+' <span style="color:var(--grey-500)">(leader\'s original stays in '+esc(row.leader.split(' ')[0])+'\'s file — this rides the room export)</span></div>';
+    }
+    return html;
   }
+  function compChipHtml(){ return avgLineHtml(); }
 
   body.innerHTML =
     '<button class="close-x" id="modalClose">✕</button>'+
