@@ -92,6 +92,7 @@ main{max-width:1300px;margin:0 auto;padding:28px 28px 90px}
 .badge.c{background:#F8DCDC;color:#8E0000}
 .badge.wrongseat{background:var(--orange-100);color:var(--orange-900)}
 .badge.rehireno{background:#F8DCDC;color:#8E0000}
+.badge.ninemoreworse{background:#F8DCDC;color:#8E0000}
 .badge.belowbar{background:#F8DCDC;color:#8E0000}
 .noaction{color:var(--error);font-weight:700;font-size:11px}
 
@@ -178,7 +179,7 @@ footer{background:var(--navy-700);color:var(--navy-100);text-align:center;paddin
       <div style="background:#fff; border:1px solid var(--grey-100); border-radius:var(--radius-md); padding:12px 16px; margin-top:8px; line-height:1.6">
         <b>Composite</b> = the straight average of all 10 scored items — the 7 CHOICES values <i>and</i> the 3 Ideal Team Player virtues (Humble / Hungry / Smart), equal weight, each 1–5. Nothing else moves the number.<br>
         <b>Grade bands:</b> A ≥ 4.5 · B ≥ 4.0 · C &lt; 4.0.<br>
-        <b>Flags (don't affect the number):</b> any GWC "No" → <span class="badge wrongseat">Wrong seat</span> · any single value ≤ 2 → <span class="badge belowbar">Below bar</span> · rehire "No" → <span class="badge rehireno">Rehire No</span>. A C grade (or any flag) puts the person on the watch list; C's are expected to carry an action plan.<br>
+        <b>Flags (don't affect the number):</b> any GWC "No" → <span class="badge wrongseat">Wrong seat</span> · any single value ≤ 2 → <span class="badge belowbar">Below bar</span> · a ⬇ Worse on either Nine-More Test axis → <span class="badge ninemoreworse">9-More: Worse</span> (pre-7/30 files still carry the retired rehire "No" as <span class="badge rehireno">Rehire No</span> — same trigger, old label). A C grade (or any flag) puts the person on the watch list; C's are expected to carry an action plan.<br>
         <b>Room edits</b> (click a score in any card) never change the leader's file — they compute a separate "room read" composite that rides the room-notes export.
       </div>
     </details>
@@ -413,6 +414,18 @@ function personStats(person){
   return Object.assign({}, person, {composite, grade, wrongSeat, belowBar});
 }
 
+// Nine-More Test (7/30 ruling) — replaces the retired "enthusiastically rehire?" question. This
+// room shell has to read BOTH shapes: dropped files from before 7/30 still carry the legacy
+// person.rehire===false trigger, files from 7/30 on carry person.nineMore.{performance,culture}.
+// Watch-list trigger = legacy rehire===false OR either Nine-More axis === "worse".
+function nineMoreIsWorse(person){
+  const nm = person.nineMore;
+  return !!(nm && (nm.performance === 'worse' || nm.culture === 'worse'));
+}
+function legacyRehireNo(person){
+  return person.rehire === false;
+}
+
 function render(){
   const hasData = FILES.length > 0;
   document.getElementById('rollup').style.display = hasData ? 'block' : 'none';
@@ -459,7 +472,8 @@ function collectAllRowsUnfiltered(){
       const reasons = [];
       if (s.grade === 'C') reasons.push('C grade');
       if (s.wrongSeat) reasons.push('wrong seat');
-      if (person.rehire === false) reasons.push('rehire: No');
+      if (legacyRehireNo(person)) reasons.push('rehire: No');
+      if (nineMoreIsWorse(person)) reasons.push('nine-more: worse');
       if (s.belowBar) reasons.push('below-bar value');
       rows.push({
         name: person.name, leader: f.payload.evaluator.name, evaluatorKey: f.payload.evaluator.key,
@@ -513,18 +527,19 @@ function renderAuditTable(){
 }
 
 function renderCompanyStrip(){
-  let total=0, a=0,b=0,c=0, wrongSeat=0, rehireNo=0;
+  let total=0, a=0,b=0,c=0, wrongSeat=0, nineMoreWorseCt=0;
   FILES.forEach(f=>{
     f.payload.people.forEach(person=>{
       const s = personStats(person);
       total++;
       if (s.grade==='A') a++; else if (s.grade==='B') b++; else if (s.grade==='C') c++;
       if (s.wrongSeat) wrongSeat++;
-      if (person.rehire === false) rehireNo++;
+      // Combined count: legacy rehire===false (pre-7/30 files) OR a Nine-More "worse" — same
+      // watch-list trigger, just two data shapes depending on when the file was exported.
+      if (legacyRehireNo(person) || nineMoreIsWorse(person)) nineMoreWorseCt++;
     });
   });
   const leadersIn = FILES.length;
-  const leadersPending = ALL_EVALUATORS.length - leadersIn;
   const pctA = total ? Math.round(a/total*100) : 0;
   const strip = document.getElementById('companyStrip');
   strip.innerHTML =
@@ -532,15 +547,7 @@ function renderCompanyStrip(){
     stat(a+' / '+b+' / '+c, 'A / B / C') +
     stat(pctA+'%','A-players') +
     stat(wrongSeat,'Wrong seat') +
-    stat(rehireNo,'Rehire: No') +
-    '<div class="spacer stat">'+stat(leadersIn+' / '+ALL_EVALUATORS.length, 'Leaders in').replace('stat','')+'</div>';
-  // simpler: leaders in/pending as its own stat block
-  strip.innerHTML =
-    stat(total,'People evaluated') +
-    stat(a+' / '+b+' / '+c, 'A / B / C') +
-    stat(pctA+'%','A-players') +
-    stat(wrongSeat,'Wrong seat') +
-    stat(rehireNo,'Rehire: No') +
+    stat(nineMoreWorseCt,'9-More: Worse') +
     stat(leadersIn+' / '+ALL_EVALUATORS.length,'Leaders in (of 7)');
 }
 
@@ -585,7 +592,8 @@ function collectWatchRows(){
       const reasons = [];
       if (s.grade === 'C') reasons.push('C grade');
       if (s.wrongSeat) reasons.push('wrong seat');
-      if (person.rehire === false) reasons.push('rehire: No');
+      if (legacyRehireNo(person)) reasons.push('rehire: No');
+      if (nineMoreIsWorse(person)) reasons.push('nine-more: worse');
       if (s.belowBar) reasons.push('below-bar value');
       if (reasons.length){
         rows.push({
@@ -620,6 +628,7 @@ function renderWatchTable(){
       if (reason==='C grade') return '<span class="badge c">C</span>';
       if (reason==='wrong seat') return '<span class="badge wrongseat">Wrong seat</span>';
       if (reason==='rehire: No') return '<span class="badge rehireno">Rehire No</span>';
+      if (reason==='nine-more: worse') return '<span class="badge ninemoreworse">9-More: Worse</span>';
       if (reason==='below-bar value') return '<span class="badge belowbar">Below bar</span>';
       return reason;
     }).join(' ');
@@ -705,7 +714,13 @@ function openModal(row){
   rowsHtml += '<tr><td>GWC — Get it</td><td>'+fmtBool(gwc.get)+'</td></tr>';
   rowsHtml += '<tr><td>GWC — Want it</td><td>'+fmtBool(gwc.want)+'</td></tr>';
   rowsHtml += '<tr><td>GWC — Capacity</td><td>'+fmtBool(gwc.capacity)+'</td></tr>';
-  rowsHtml += '<tr><td>Enthusiastically rehire?</td><td>'+fmtBool(p.rehire)+'</td></tr>';
+  if (p.nineMore){
+    rowsHtml += '<tr><td>🧪 Nine-More — Team performance</td><td>'+esc(p.nineMore.performance||'—')+'</td></tr>';
+    rowsHtml += '<tr><td>🧪 Nine-More — Team culture</td><td>'+esc(p.nineMore.culture||'—')+'</td></tr>';
+    if (p.nineMore.note) rowsHtml += '<tr><td colspan="2" style="padding:2px 4px 8px 18px;color:var(--grey-500);font-weight:400;font-size:12px;border-top:none">↳ '+esc(p.nineMore.note)+'</td></tr>';
+  } else if (p.rehire !== undefined && p.rehire !== null) {
+    rowsHtml += '<tr><td>Enthusiastically rehire? <span class="tiny" style="color:var(--grey-400)">(legacy, pre-7/30)</span></td><td>'+fmtBool(p.rehire)+'</td></tr>';
+  }
 
   function avgLineHtml(){
     const edits = editable ? scoreEditsFor(row.evaluatorKey, row.name) : {};

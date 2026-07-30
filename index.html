@@ -81,6 +81,7 @@ main{max-width:1200px;margin:0 auto;padding:28px 28px 90px}
 .badge.c{background:#F8DCDC;color:#8E0000}
 .badge.wrongseat{background:var(--orange-100);color:var(--orange-900)}
 .badge.belowbar{background:#F8DCDC;color:#8E0000}
+.badge.ninemoreworse{background:#F8DCDC;color:#8E0000}
 .badge.pending{background:var(--grey-100);color:var(--grey-500)}
 
 /* ---- Roster ---- */
@@ -241,7 +242,7 @@ footer{background:var(--navy-700);color:var(--navy-100);text-align:center;paddin
     <div class="export-grid">
       <div class="export-card">
         <h3>Export for Cameron</h3>
-        <p>Downloads a JSON file with everyone on your roster — scores, notes, GWC, rehire calls. This is the only way your evaluations leave this browser. Send the file to Cameron (Slack DM or email).</p>
+        <p>Downloads a JSON file with everyone on your roster — scores, notes, GWC, the Nine-More Test call. This is the only way your evaluations leave this browser. Send the file to Cameron (Slack DM or email).</p>
         <button id="btnExport">Download export file</button>
         <div class="checklist" id="exportChecklist" style="display:none"></div>
       </div>
@@ -330,7 +331,7 @@ const CV_ITEMS = [
 ];
 const CV_ANCHORS = [
   ["1","Active problem"],["2","Below the bar"],["3","Meets the bar"],
-  ["4","Strong, with named opportunities"],["5","The standard others get pointed to"]
+  ["4","Strong, with named opportunities"],["5","Best of the best — the shining example you'd point the whole team to"]
 ];
 const ITP_TRAITS = [
   {key:"humble", label:"Humble", def:"Lacks excessive ego, shares credit."},
@@ -363,7 +364,10 @@ function freshPerson(seed){
       smart: {v:3, note:""}
     },
     gwc: { get:null, want:null, capacity:null, notes:{get:"",want:"",capacity:""} },
+    /* 7/30 ruling: rehire question RETIRED (28/30 answered Yes — gone blind). Replaced by
+       nineMore, always the LAST question. rehire kept only so pre-7/30 saves don't crash. */
     rehire: null,
+    nineMore: { performance:"same", culture:"same", note:"" },
     overallNote: "",
     actionPlan: null
   };
@@ -376,6 +380,11 @@ function freshPerson(seed){
 function migratePerson(p){
   if (!p.coreValues.itemNotes) p.coreValues.itemNotes = new Array(CV_ITEMS.length).fill("");
   if (!p.gwc.notes) p.gwc.notes = {get:"",want:"",capacity:""};
+  // v1.4 (7/30, Nine-More Test ruling): additive-only backfill, same contract as above — never
+  // touches an existing nineMore answer, only fills a slot that's never existed before.
+  if (!p.nineMore) p.nineMore = {performance:"same", culture:"same", note:""};
+  if (p.nineMore.performance==null) p.nineMore.performance = "same";
+  if (p.nineMore.culture==null) p.nineMore.culture = "same";
   return p;
 }
 
@@ -461,8 +470,8 @@ function computeStats(p){
   const gwcSet = gwcVals.every(v => v !== null && v !== undefined);
 
   // Universal note gate (Cameron's ruling, 7/29 QGR Day 1): every scored CHOICES value, ITP trait,
-  // and GWC answer — including 5s — needs a written note, "so we know why they think they are
-  // standard bearers." missingNotes lists exactly which ones still need one; a person doesn't
+  // and GWC answer — including 5s — needs a written note, "so we know why they're the best of the
+  // best." missingNotes lists exactly which ones still need one; a person doesn't
   // count as complete, and Export lists these by name, until every score has its note.
   const missingNotes = [];
   CV_ITEMS.forEach((label,i) => {
@@ -474,10 +483,15 @@ function computeStats(p){
   [['get','GWC — Get it'],['want','GWC — Want it'],['capacity','GWC — Capacity to do it']].forEach(([key,label]) => {
     if (p.gwc[key]!=null && !((p.gwc.notes||{})[key]||'').trim()) missingNotes.push(label);
   });
+  // Nine-More Test (7/30 ruling, replaces "enthusiastically rehire?"): always the closing verdict.
+  // Arrows default to "same" via freshPerson/migratePerson, so the only gate is the required note.
+  const nineMore = p.nineMore || {performance:"same", culture:"same", note:""};
+  if (!(nineMore.note||'').trim()) missingNotes.push('Nine-More Test — why?');
+  const nineMoreWorse = nineMore.performance === 'worse' || nineMore.culture === 'worse';
 
   const complete = cvComplete && itpComplete && gwcSet && missingNotes.length===0;
   const noteRequired = (composite!=null && composite < 4.0) || wrongSeat || belowBar;
-  return {composite, grade, wrongSeat, belowBar, complete, noteRequired, missingNotes};
+  return {composite, grade, wrongSeat, belowBar, nineMoreWorse, complete, noteRequired, missingNotes};
 }
 
 /* ============ RENDER: PICKER ============ */
@@ -572,6 +586,7 @@ function renderRoster(){
     if (s.grade) badges += '<span class="badge '+s.grade.toLowerCase()+'">'+s.grade+'</span>';
     if (s.wrongSeat) badges += '<span class="badge wrongseat">Wrong seat</span>';
     if (s.belowBar) badges += '<span class="badge belowbar">Below bar</span>';
+    if (s.nineMoreWorse) badges += '<span class="badge ninemoreworse">9-More: Worse</span>';
     if (!s.grade) badges += '<span class="badge pending">Not started</span>';
     card.innerHTML =
       '<div class="top">'+
@@ -661,7 +676,9 @@ function renderEvaluate(){
   wrap.appendChild(buildCoreValuesSection(p, s));
   wrap.appendChild(buildItpSection(p));
   wrap.appendChild(buildGwcSection(p, s));
-  wrap.appendChild(buildRehireSection(p));
+  /* 7/30 ruling (Cameron, placement correction): Nine-More sits directly under GWC, ABOVE the
+     overall note and action plan — not at the very end of the card. */
+  wrap.appendChild(buildNineMoreSection(p, s));
   wrap.appendChild(buildNoteSection(p, s));
   if (s.grade === 'C') wrap.appendChild(buildActionPlanSection(p));
 
@@ -687,7 +704,7 @@ function buildCoreValuesSection(p, s){
   sec.innerHTML =
     '<div class="shead"><h3>CHOICES core values <button type="button" class="help-btn" data-pop="cv">?</button></h3></div>'+
     '<div class="shelp">Score each value 1–5 for this quarter. '+anchorLine+'.</div>'+
-    '<div class="shelp">A note is required for every score — <b>including 5s</b>, so we know why they\'re the standard.</div>'+
+    '<div class="shelp">A note is required for every score — <b>including 5s</b>, so we know why they\'re the best of the best.</div>'+
     '<div class="popover" data-popover="cv" style="display:none"><button class="close-x">✕</button><h4>Scale</h4>'+anchorsHtml+'</div>'+
     CV_ITEMS.map((label, i) => {
       const v = p.coreValues.items[i];
@@ -781,16 +798,46 @@ function buildGwcSection(p, s){
   return sec;
 }
 
-function buildRehireSection(p){
+/* Nine-More Test (7/30 ruling) — replaces the retired "enthusiastically rehire?" question, which
+   had gone blind at 28/30 Yes. Sits directly under GWC, above the overall note and action plan
+   (Cameron's 7/30 placement correction). Arrows default to "same" (fill-only); note is required. */
+function buildNineMoreSection(p, s){
   const sec = document.createElement('div');
-  sec.className = 'section';
-  sec.innerHTML = '<div class="shead"><h3>Enthusiastically rehire?</h3></div>'+
-    '<div class="togglepair" data-rehire>'+
-    '<button type="button" class="yes'+(p.rehire===true?' sel':'')+'" data-v="true">Yes</button>'+
-    '<button type="button" class="no'+(p.rehire===false?' sel':'')+'" data-v="false">No</button>'+
-    '</div>';
-  sec.querySelector('[data-rehire]').querySelectorAll('button').forEach(btn=>{
-    btn.addEventListener('click', ()=>{ p.rehire = btn.dataset.v==='true'; scheduleSave(); renderEvaluate(); });
+  sec.className = 'section nine-more';
+  const nm = p.nineMore || (p.nineMore = {performance:"same", culture:"same", note:""});
+  const scoredCv = p.coreValues.items.filter(v=>v!=null);
+  const scoredItp = ITP_TRAITS.map(t=>p.itp[t.key].v).filter(v=>v!=null);
+  const cvAvg = scoredCv.length ? scoredCv.reduce((a,b)=>a+b,0)/scoredCv.length : null;
+  const itpAvg = scoredItp.length ? scoredItp.reduce((a,b)=>a+b,0)/scoredItp.length : null;
+  const recapBits = [];
+  if (cvAvg!=null) recapBits.push('CHOICES avg '+cvAvg.toFixed(1));
+  if (itpAvg!=null) recapBits.push('ITP avg '+itpAvg.toFixed(1));
+  const recap = recapBits.length
+    ? 'You scored them: '+recapBits.join(' · ')+(s.composite!=null?' → composite '+s.composite.toFixed(1):'')+'. Now the net call.'
+    : 'Score CHOICES and ITP above, then make the net call.';
+  const missing = !(nm.note||'').trim();
+  const arrows = (dim, val) => ['better','same','worse'].map(v=>{
+    const label = v==='better' ? '⬆ Better' : v==='same' ? '↔ Same' : '⬇ Worse';
+    const cls = v==='worse' ? 'bad' : v==='better' ? 'good' : 'mid';
+    return '<button type="button" class="chip'+(val===v?' sel '+cls:'')+'" data-nm="'+dim+'" data-v="'+v+'">'+label+'</button>';
+  }).join('');
+  sec.innerHTML = '<div class="shead"><h3>🧪 The Nine-More Test</h3></div>'+
+    '<div class="shelp tiny muted">'+esc(recap)+'</div>'+
+    '<div class="shelp"><b>Imagine nine more of them on your team.</b></div>'+
+    '<div class="row"><div class="rowhead"><div class="rtitle">Team performance:</div></div><div class="chiprow" data-nmrow="performance">'+arrows('performance', nm.performance)+'</div></div>'+
+    '<div class="row"><div class="rowhead"><div class="rtitle">Team culture:</div></div><div class="chiprow" data-nmrow="culture">'+arrows('culture', nm.culture)+'</div></div>'+
+    '<textarea class="narrative'+(missing?' note-required':'')+'" data-nm-note placeholder="Why? Name the evidence — one note covering both.">'+esc(nm.note||'')+'</textarea>'+
+    (missing?'<div class="reqflag">Note required.</div>':'')+
+    '<div class="shelp tiny muted">"Same" is a real answer, not a dodge — most solid people are ↔/↔. The two arrows disagreeing is the signal worth writing about: strong numbers that cost you culture, or great culture that isn\'t pulling weight.</div>';
+  sec.querySelectorAll('[data-nm]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      nm[btn.dataset.nm] = btn.dataset.v;
+      scheduleSave(); renderEvaluate();
+    });
+  });
+  sec.querySelector('[data-nm-note]').addEventListener('input', e=>{
+    nm.note = e.target.value; scheduleSave();
+    e.target.classList.toggle('note-required', !e.target.value.trim());
   });
   return sec;
 }
@@ -906,10 +953,10 @@ function buildExportPayload(){
           smart:  {v:p.itp.smart.v,  note:p.itp.smart.note||""}
         },
         gwc: { get:p.gwc.get, want:p.gwc.want, capacity:p.gwc.capacity, notes: Object.assign({get:"",want:"",capacity:""}, p.gwc.notes) },
-        rehire: p.rehire,
+        nineMore: { performance: (p.nineMore||{}).performance||"same", culture: (p.nineMore||{}).culture||"same", note: (p.nineMore||{}).note||"" },
         overallNote: p.overallNote || "",
         actionPlan: p.actionPlan || null,
-        composite: s.composite, grade: s.grade, wrongSeat: s.wrongSeat, belowBar: s.belowBar, complete: s.complete,
+        composite: s.composite, grade: s.grade, wrongSeat: s.wrongSeat, belowBar: s.belowBar, nineMoreWorse: s.nineMoreWorse, complete: s.complete,
         missingNotes: s.missingNotes
       };
     })
@@ -919,7 +966,7 @@ function buildExportPayload(){
 document.getElementById('btnExport').addEventListener('click', ()=>{
   const missing = collectMissingNotes();
   if (missing.length){
-    const proceed = confirm('Missing required notes (including any 5s — why they\'re the standard):\n\n'+missing.join('\n')+'\n\nExport anyway?');
+    const proceed = confirm('Missing required notes (including any 5s — why they\'re the best of the best):\n\n'+missing.join('\n')+'\n\nExport anyway?');
     if (!proceed) return;
   }
   const payload = buildExportPayload();
@@ -956,7 +1003,8 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
         ['humble','hungry','smart'].forEach(k=>{ rec.itp[k] = {v: imp.itp[k].v, note: imp.itp[k].note||""}; });
         rec.gwc = Object.assign({get:null,want:null,capacity:null,notes:{get:"",want:"",capacity:""}}, imp.gwc);
         if (!rec.gwc.notes) rec.gwc.notes = {get:"",want:"",capacity:""};
-        rec.rehire = imp.rehire;
+        rec.rehire = imp.rehire; // legacy field — read harmlessly if a pre-7/30 export still carries it
+        rec.nineMore = imp.nineMore ? {performance: imp.nineMore.performance||"same", culture: imp.nineMore.culture||"same", note: imp.nineMore.note||""} : {performance:"same", culture:"same", note:""};
         rec.overallNote = imp.overallNote || "";
         rec.actionPlan = imp.actionPlan || null;
         if (existing){ Object.assign(existing, rec); merged++; }
