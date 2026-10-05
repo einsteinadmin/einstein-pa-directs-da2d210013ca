@@ -155,7 +155,7 @@ footer{background:var(--navy-700);color:var(--navy-100);text-align:center;paddin
 <header id="appHeader">
   <div class="brand">
     <span class="bebas">PEOPLE ANALYZER</span>
-    <span class="tag">Directs rollup · Q3 2026 gut-check</span>
+    <span class="tag">Directs rollup · October 2026 QGR gut-check</span>
   </div>
   <div style="display:flex;gap:10px;align-items:center">
     <button class="exportbtn" id="btnExportNotes">⬇ Export room notes</button>
@@ -214,7 +214,7 @@ footer{background:var(--navy-700);color:var(--navy-100);text-align:center;paddin
 (function(){
 "use strict";
 
-const STORAGE_KEY = "einstein-pa-directs-results-q3";
+const STORAGE_KEY = "einstein-pa-directs-results-2026-10";
 const ALL_EVALUATORS = ["brian","mike","amanda","matisen","anne","nhel","paul"];
 const EVALUATOR_NAMES = {
   brian:"Brian Herzig", mike:"Mike Vandenbroader", amanda:"Amanda Ware",
@@ -246,7 +246,7 @@ function filteredByLeader(rows){
 
 /* Room-audit layer: verdicts + live notes, stored SEPARATELY from the dropped files
    so re-drops / late files never touch them. Keyed by evaluatorKey::personName. */
-const ROOM_KEY = "einstein-pa-directs-roomnotes-q3";
+const ROOM_KEY = "einstein-pa-directs-roomnotes-2026-10";
 let ROOM = {}; // { "evalKey::Person Name": {verdict:'confirmed'|'challenged'|'needsplan'|null, note:''} }
 function loadRoom(){
   try{ ROOM = JSON.parse(localStorage.getItem(ROOM_KEY)) || {}; }catch(e){ ROOM = {}; }
@@ -339,6 +339,7 @@ function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(FILES)); }
 function validatePayload(json){
   if (!json || typeof json !== 'object') return 'Not a JSON object.';
   if (json.schema !== 'einstein-pa-directs/v1') return 'Wrong schema (expected einstein-pa-directs/v1).';
+  if (json.cycle !== '2026-10') return 'Wrong cycle: this file is from ' + (json.cycle || 'an earlier cycle (July, no cycle tag)') + ', not the October 2026 QGR (2026-10). Not loaded.';
   if (!json.evaluator || !json.evaluator.key) return 'Missing evaluator.key.';
   if (!Array.isArray(json.people)) return 'Missing people[] array.';
   return null;
@@ -719,7 +720,7 @@ function openModal(row){
     rowsHtml += '<tr><td>🧪 Nine-More — Team culture</td><td>'+esc(p.nineMore.culture||'—')+'</td></tr>';
     if (p.nineMore.note) rowsHtml += '<tr><td colspan="2" style="padding:2px 4px 8px 18px;color:var(--grey-500);font-weight:400;font-size:12px;border-top:none">↳ '+esc(p.nineMore.note)+'</td></tr>';
   } else if (p.rehire !== undefined && p.rehire !== null) {
-    rowsHtml += '<tr><td>Enthusiastically rehire? <span class="tiny" style="color:var(--grey-400)">(legacy, pre-7/30)</span></td><td>'+fmtBool(p.rehire)+'</td></tr>';
+    rowsHtml += '<tr><td>Enthusiastically rehire? <span class="tiny" style="color:var(--grey-400)">(older export format)</span></td><td>'+fmtBool(p.rehire)+'</td></tr>';
   }
 
   function avgLineHtml(){
@@ -852,9 +853,9 @@ document.getElementById('btnExportNotes').addEventListener('click', ()=>{
   });
   if (!notes.length){ showToast('No verdicts or notes yet — nothing to export.'); return; }
   const stamp = new Date().toISOString().slice(0,10);
-  const json = {schema:'einstein-pa-roomnotes/v1', quarter:'Q3 2026', exportedAt:new Date().toISOString(), notes};
-  dl('pa-room-notes-q3-'+stamp+'.json', JSON.stringify(json,null,2), 'application/json');
-  let md = '# People Analyzer — room audit notes (Q3 2026, exported '+stamp+')\n';
+  const json = {schema:'einstein-pa-roomnotes/v1', quarter:'October 2026 QGR', cycle:'2026-10', exportedAt:new Date().toISOString(), notes};
+  dl('pa-room-notes-2026-10-'+stamp+'.json', JSON.stringify(json,null,2), 'application/json');
+  let md = '# People Analyzer — room audit notes (October 2026 QGR, exported '+stamp+')\n';
   let curLeader = '';
   notes.forEach(n=>{
     if (n.leader !== curLeader){ md += '\n## '+n.leader+'\n'; curLeader = n.leader; }
@@ -866,7 +867,7 @@ document.getElementById('btnExportNotes').addEventListener('click', ()=>{
       md += '- Composite: leader '+(n.leaderComposite==null?'—':n.leaderComposite)+' → room '+(n.roomComposite==null?'—':n.roomComposite)+'\n';
     }
   });
-  dl('pa-room-notes-q3-'+stamp+'.md', md, 'text/markdown');
+  dl('pa-room-notes-2026-10-'+stamp+'.md', md, 'text/markdown');
   showToast('Exported '+notes.length+' note(s) — JSON + markdown.');
 });
 function dl(name, content, type){

@@ -1,4 +1,13 @@
 <!DOCTYPE html>
+<!--
+  People Analyzer, Directs tier. v2.0, October 2026 QGR reset (2026-10-05).
+  Reset from the July v1.2 build (July copy archived at Supporting Projects/QGR Prep HQ/archive/2026-q3-cycle-july-tools/).
+  Changes: storage key prefix is now "einstein-pa-directs-2026-10-" so leaders' July saves are never read or overwritten;
+  export file is pa-directs-<leader>-2026-10.json with quarter "October 2026 QGR" and cycle "2026-10" (schema tag unchanged,
+  einstein-pa-directs/v1, so results.html still accepts it); header and picker labels say "October 2026 QGR"; seed ROSTERS
+  refreshed to the current org (Daniel = BM North Austin; Calvin Hughes = N. Austin Flex under Daniel; Hector = S. Austin Ops; Jake Petersen = new S. Austin FM (Cameron 10/5); Austin LeLievre added
+  under Amanda). Scoring rules, note gates, Nine-More test, roster top-up merge and branch sort are unchanged.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -195,7 +204,7 @@ footer{background:var(--navy-700);color:var(--navy-100);text-align:center;paddin
 <!-- PICKER -->
 <div id="pickerScreen">
   <div class="ptitle">WHO ARE YOU?</div>
-  <div class="psub">People Analyzer — Directs tier · Q3 2026. Pick your name to load (or start) your roster.</div>
+  <div class="psub">People Analyzer — Directs tier · October 2026 QGR (Q3 review · Q4 planning). Pick your name to load (or start) your roster.</div>
   <div class="picker-privacy">This is a lighter version of the Roundtable tool, for evaluating your own direct reports. Everything you enter lives in this browser's local storage. Nothing leaves until you go to <b>Export</b> and download a file to send to Cameron.</div>
   <div class="picker-groups" id="pickerGrid"></div>
 </div>
@@ -204,7 +213,7 @@ footer{background:var(--navy-700);color:var(--navy-100);text-align:center;paddin
 <header id="appHeader" style="display:none">
   <div class="brand">
     <span class="bebas">PEOPLE ANALYZER</span>
-    <span class="tag" id="headerTag">My Directs · Q3 2026</span>
+    <span class="tag" id="headerTag">My Directs · October 2026 QGR</span>
   </div>
   <div class="right">
     <div class="savebox" id="saveIndicator">Not saved yet</div>
@@ -273,12 +282,13 @@ footer{background:var(--navy-700);color:var(--navy-100);text-align:center;paddin
 /* ============ SEED ROSTERS ============ */
 const ROSTERS = {
   brian: { name:"Brian Herzig", role:"CTXH Regional Manager", group:"Leadership", people:[
-    {name:"Calvin Hughes", role:"BM, North Austin", branch:"North Austin", extra:"transitioning out"},
+    {name:"Daniel Behseresht", role:"BM, North Austin", branch:"North Austin"},
     {name:"Nick Dagel", role:"Manager, North Austin", branch:"North Austin"},
     {name:"Rance Pope", role:"Manager, North Austin", branch:"North Austin"},
+    {name:"Calvin Hughes", role:"Flex Manager, North Austin (reports to Daniel)", branch:"North Austin"},
     {name:"Chris Anderson", role:"BM, South Austin", branch:"South Austin"},
-    {name:"Daniel Behseresht", role:"Manager, South Austin (incoming N. Austin BM)", branch:"South Austin"},
-    {name:"Hector Zavala", role:"Manager, South Austin", branch:"South Austin"},
+    {name:"Hector Zavala", role:"Operations Manager, South Austin", branch:"South Austin"},
+    {name:"Jake Petersen", role:"Field Manager, South Austin", branch:"South Austin", extra:"new; training starts week of 10/5"},
     {name:"Jespah Lara", role:"Flex Manager, South Austin", branch:"South Austin"},
     {name:"Frank Williams", role:"BM, Leander", branch:"Leander"},
     {name:"Garrison Cobe", role:"Manager, Leander", branch:"Leander"},
@@ -304,7 +314,8 @@ const ROSTERS = {
   amanda: { name:"Amanda Ware", role:"Director of CX", group:"Leadership", people:[
     {name:"Nhel Banayad", role:"Sales Team Lead", branch:null},
     {name:"Tet", role:"Sales Enablement Manager", branch:null, extra:"Nhel's direct — Amanda reviews too"},
-    {name:"Carly", role:"Claims Manager", branch:null}
+    {name:"Carly", role:"Claims Manager", branch:null},
+    {name:"Austin LeLievre", role:"Videographer / Content Creator", branch:null, extra:"reports to Amanda since 8/26"}
   ]},
   matisen: { name:"Matisen Harper", role:"Director of IT", group:"Leadership", people:[
     {name:"Fabian", role:"Senior Developer", branch:null}
@@ -345,7 +356,7 @@ let DATA = null; // {evaluatorKey, evaluatorName, evaluatorRole, people:[...]}
 let personIdx = 0;
 let saveTimer = null;
 
-function storageKey(key){ return "einstein-pa-directs-q3-" + key; }
+function storageKey(key){ return "einstein-pa-directs-2026-10-" + key; }
 
 // Default-3 (Cameron's ruling, 7/29 QGR Day 1): every CHOICES value and ITP trait on a BRAND NEW
 // person starts at 3 ("meets the bar" / "sometimes, with prompting") instead of blank, so picking
@@ -538,7 +549,7 @@ function showApp(){
   document.getElementById('appHeader').style.display = 'flex';
   document.getElementById('mainNav').style.display = 'flex';
   document.getElementById('mainArea').style.display = 'block';
-  document.getElementById('headerTag').textContent = DATA.evaluatorName + ' · ' + DATA.evaluatorRole + ' · Q3 2026';
+  document.getElementById('headerTag').textContent = DATA.evaluatorName + ' · ' + DATA.evaluatorRole + ' · October 2026 QGR';
   save();
   switchView('roster');
 }
@@ -939,7 +950,8 @@ function renderExport(){
 function buildExportPayload(){
   return {
     schema: "einstein-pa-directs/v1",
-    quarter: "Q3 2026",
+    quarter: "October 2026 QGR",
+    cycle: "2026-10",
     evaluator: { key: evaluatorKey, name: DATA.evaluatorName, role: DATA.evaluatorRole },
     exportedAt: new Date().toISOString(),
     people: DATA.people.map(p=>{
@@ -974,7 +986,7 @@ document.getElementById('btnExport').addEventListener('click', ()=>{
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'pa-directs-'+evaluatorKey+'-q3-2026.json';
+  a.download = 'pa-directs-'+evaluatorKey+'-2026-10.json';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('Exported. Send the file to Cameron.');
@@ -988,6 +1000,7 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
     try{
       const json = JSON.parse(ev.target.result);
       if (json.schema !== 'einstein-pa-directs/v1'){ throw new Error('Not a pa-directs export file.'); }
+      if (json.cycle !== '2026-10'){ throw new Error('This file is from a different cycle (' + (json.cycle || 'July, no cycle tag') + '), not the October 2026 QGR. Nothing was imported.'); }
       const key = json.evaluator && json.evaluator.key;
       if (key !== evaluatorKey){
         document.getElementById('importStatus').textContent = 'This file is for '+(key||'another')+' — you\'re currently evaluating as '+evaluatorKey+'. Switch evaluator first.';
